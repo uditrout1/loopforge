@@ -1,5 +1,5 @@
-import { readdir, readFile, stat } from "node:fs/promises"
-import { join, extname, relative } from "node:path"
+import { readdir, readFile, lstat } from "node:fs/promises"
+import { join, extname, relative, resolve } from "node:path"
 import type { TechStack, ProjectKnowledge } from "@devos/core"
 import { chunkFile } from "./chunker.js"
 
@@ -17,7 +17,10 @@ const SKIP_DIRS = new Set([
   "DerivedData", ".build",
 ])
 
-const MAX_FILE_SIZE_BYTES = 200_000 // skip large generated files
+const MAX_FILE_SIZE_BYTES = 200_000
+// Fix 4: guard against deeply nested repos and huge file counts
+const MAX_DEPTH = 20
+const MAX_FILES = 50_000
 
 export interface IndexResult {
   chunks: ReturnType<typeof chunkFile>
@@ -30,30 +33,43 @@ export async function indexRepository(
   projectId: string,
   repoPath: string,
 ): Promise<IndexResult> {
+  const canonicalRoot = resolve(repoPath)
   const allChunks: ReturnType<typeof chunkFile> = []
   const seenExtensions = new Set<string>()
   const todos: string[] = []
   let fileCount = 0
 
-  async function walk(dir: string): Promise<void> {
+  async function walk(dir: string, depth: number): Promise<void> {
+    // Fix 4: cap traversal depth
+    if (depth > MAX_DEPTH) return
+    if (fileCount >= MAX_FILES) return
+
     const entries = await readdir(dir, { withFileTypes: true })
 
     await Promise.all(
       entries.map(async (entry) => {
+        if (fileCount >= MAX_FILES) return
         if (SKIP_DIRS.has(entry.name)) return
 
         const fullPath = join(dir, entry.name)
 
+        // Fix 4: use lstat (not stat/isDirectory on the dirent) to detect symlinks
+        // before following them, preventing escape from the repo root via symlinks.
+        const fileLstat = await lstat(fullPath)
+        if (fileLstat.isSymbolicLink()) return
+
+        // Verify the resolved path is still inside the repo root (belt-and-suspenders)
+        const resolvedPath = resolve(fullPath)
+        if (!resolvedPath.startsWith(canonicalRoot)) return
+
         if (entry.isDirectory()) {
-          await walk(fullPath)
+          await walk(fullPath, depth + 1)
           return
         }
 
         const ext = extname(entry.name).toLowerCase()
         if (!INDEXABLE_EXTENSIONS.has(ext)) return
-
-        const fileStat = await stat(fullPath)
-        if (fileStat.size > MAX_FILE_SIZE_BYTES) return
+        if (fileLstat.size > MAX_FILE_SIZE_BYTES) return
 
         const content = await readFile(fullPath, "utf-8")
         const relPath = relative(repoPath, fullPath)
@@ -61,7 +77,6 @@ export async function indexRepository(
         seenExtensions.add(ext)
         fileCount++
 
-        // Extract TODO comments
         const todoMatches = content.match(/\/\/\s*TODO[^:\n]*:[^\n]*/gi) ?? []
         todos.push(...todoMatches.slice(0, 3).map((t) => `${relPath}: ${t.trim()}`))
 
@@ -70,10 +85,10 @@ export async function indexRepository(
     )
   }
 
-  await walk(repoPath)
+  await walk(canonicalRoot, 0)
 
-  const stack = await detectStack(repoPath, seenExtensions)
-  const knowledge = buildKnowledge(repoPath, todos)
+  const stack = await detectStack(canonicalRoot, seenExtensions)
+  const knowledge = buildKnowledge(todos)
 
   return { chunks: allChunks, stack, knowledge, fileCount }
 }
@@ -96,7 +111,6 @@ async function detectStack(
   if (extensions.has(".kt")) languages.push("Kotlin")
   if (extensions.has(".java")) languages.push("Java")
 
-  // Detect frameworks from package.json
   try {
     const pkg = JSON.parse(
       await readFile(join(repoPath, "package.json"), "utf-8"),
@@ -114,27 +128,24 @@ async function detectStack(
     if (deps["prisma"] || deps["@prisma/client"]) databases.push("Prisma")
     if (deps["drizzle-orm"]) databases.push("Drizzle")
     if (deps["mongoose"]) databases.push("MongoDB")
-  } catch {
-    // No package.json — skip
-  }
+  } catch { /* no package.json */ }
 
-  // Detect infra from config files
   try {
-    await stat(join(repoPath, "Dockerfile"))
+    await lstat(join(repoPath, "Dockerfile"))
     infrastructure.push("Docker")
   } catch { /* no Dockerfile */ }
 
   try {
-    await stat(join(repoPath, "turbo.json"))
+    await lstat(join(repoPath, "turbo.json"))
     infrastructure.push("Turborepo")
   } catch { /* no turbo */ }
 
   return { languages, frameworks, databases, infrastructure }
 }
 
-function buildKnowledge(repoPath: string, todos: string[]): ProjectKnowledge {
+function buildKnowledge(todos: string[]): ProjectKnowledge {
   return {
-    summary: `Repository at ${repoPath}`,
+    summary: "",
     conventions: {},
     entryPoints: [],
     openTodos: todos.slice(0, 20),

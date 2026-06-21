@@ -1,29 +1,67 @@
 import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
+import { resolve, sep } from "node:path"
 import { indexRepository } from "@devos/brain"
 import type { Project } from "@devos/core"
 
-// In-memory project store — replace with Supabase in production
+// Fix 1: path traversal — only allow repos under configured roots.
+// Set ALLOWED_REPO_ROOTS as colon-separated list; defaults to $HOME.
+const ALLOWED_REPO_ROOTS: string[] = (() => {
+  const env = process.env["ALLOWED_REPO_ROOTS"]
+  if (env) return env.split(":").map((r) => resolve(r))
+  const home = process.env["HOME"]
+  if (home) return [resolve(home)]
+  return []
+})()
+
+function validateRepoPath(raw: string): string {
+  if (!raw || typeof raw !== "string") throw new Error("repoPath is required")
+  if (raw.includes("..")) throw new Error("'..' is not permitted in repoPath")
+
+  const resolved = resolve(raw)
+
+  if (ALLOWED_REPO_ROOTS.length === 0) {
+    throw new Error(
+      "ALLOWED_REPO_ROOTS is not configured. Set it to a colon-separated list of allowed base directories.",
+    )
+  }
+
+  const allowed = ALLOWED_REPO_ROOTS.some(
+    (root) => resolved === root || resolved.startsWith(root + sep),
+  )
+
+  if (!allowed) {
+    throw new Error(
+      `repoPath '${resolved}' is outside all allowed roots. Add it to ALLOWED_REPO_ROOTS.`,
+    )
+  }
+
+  return resolved
+}
+
 const projects = new Map<string, Project>()
 
 export function createProjectsRouter() {
   const app = new Hono()
 
-  // POST /projects — connect a new repository
   app.post("/", async (c) => {
-    const { name, repoPath, dataClassification } = await c.req.json<{
-      name: string
-      repoPath: string
-      dataClassification?: Project["dataClassification"]
-    }>()
+    const body = await c.req.json<{ name: string; repoPath: string }>()
+
+    let repoPath: string
+    try {
+      repoPath = validateRepoPath(body.repoPath)
+    } catch (err) {
+      return c.json({ error: (err as Error).message }, 400)
+    }
 
     const projectId = randomUUID()
 
-    // Index the repo asynchronously — return project immediately
+    // Fix 2: data classification is never accepted from the request body.
+    // It must come from server-side org/repo policy. Default is "internal".
     const project: Project = {
       id: projectId,
       orgId: "default",
-      name,
+      name: String(body.name).slice(0, 256), // bound the name length
       repoProvider: "local",
       stack: { languages: [], frameworks: [], databases: [], infrastructure: [] },
       knowledge: {
@@ -34,13 +72,12 @@ export function createProjectsRouter() {
         recentDecisions: [],
         designConstraints: [],
       },
-      dataClassification: dataClassification ?? "internal",
+      dataClassification: "internal",
       createdAt: new Date(),
     }
 
     projects.set(projectId, project)
 
-    // Index in background
     indexRepository(projectId, repoPath)
       .then(({ stack, knowledge, fileCount }) => {
         const existing = projects.get(projectId)
@@ -48,7 +85,7 @@ export function createProjectsRouter() {
         existing.stack = stack
         existing.knowledge = {
           ...knowledge,
-          summary: `${name} — ${fileCount} files indexed. Stack: ${[...stack.languages, ...stack.frameworks].join(", ")}.`,
+          summary: `${project.name} — ${fileCount} files indexed. Stack: ${[...stack.languages, ...stack.frameworks].join(", ")}.`,
         }
         existing.indexedAt = new Date()
         console.log(`[brain] Indexed ${fileCount} files for project ${projectId}`)
@@ -60,12 +97,8 @@ export function createProjectsRouter() {
     return c.json(project, 201)
   })
 
-  // GET /projects — list all projects
-  app.get("/", (c) => {
-    return c.json(Array.from(projects.values()))
-  })
+  app.get("/", (c) => c.json(Array.from(projects.values())))
 
-  // GET /projects/:id — get a project
   app.get("/:id", (c) => {
     const project = projects.get(c.req.param("id"))
     if (!project) return c.json({ error: "Project not found" }, 404)

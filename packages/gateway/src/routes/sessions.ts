@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
-import { loadSessionContext, formatContextAsSystemPrompt } from "@devos/brain"
+import { loadSessionContext, formatContextAsSystemPrompt, formatContextAsUserMessage } from "@devos/brain"
 import { route } from "@devos/router"
 import { recommendSkills } from "@devos/skills"
 import type { BrainStore } from "@devos/brain"
@@ -31,13 +31,19 @@ export function createSessionsRouter(
 
     const ctx = await loadSessionContext(projectId, store, firstMessage)
     const systemPrompt = formatContextAsSystemPrompt(ctx)
+    // Fix 5: file chunks go in a user-role message, not the system prompt,
+    // so injected instructions in repo files can't act as system directives.
+    const contextMessage = formatContextAsUserMessage(ctx)
     const sessionId = randomUUID()
 
     const recommendations = await recommendSkills(firstMessage ?? "", 3)
 
+    const initialMessages: Message[] = [{ role: "system", content: systemPrompt }]
+    if (contextMessage !== undefined) initialMessages.push(contextMessage)
+
     sessions.set(sessionId, {
       projectId,
-      messages: [{ role: "system", content: systemPrompt }],
+      messages: initialMessages,
       activeSkillIds: [],
       totalCostUsd: 0,
       createdAt: new Date(),
