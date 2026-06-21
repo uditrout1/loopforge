@@ -1,0 +1,126 @@
+const GATEWAY_URL =
+  process.env.NEXT_PUBLIC_GATEWAY_URL ?? "http://localhost:18790";
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY ?? "";
+
+function headers(): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY,
+  };
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  repoPath: string;
+  createdAt?: string;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  triggerKeywords: string[];
+  promptTemplate: string;
+  requiredModelCapability: "small" | "medium" | "frontier";
+}
+
+export interface ContextLoaded {
+  project: Project;
+  stack?: unknown;
+  openTickets?: unknown[];
+  relevantChunks?: unknown[];
+  lastSessionSummary?: string;
+}
+
+export interface SessionStartResponse {
+  sessionId: string;
+  contextLoaded: ContextLoaded;
+  recommendedSkills: Skill[];
+}
+
+export interface MessageResponse {
+  content: string;
+  model: string;
+  provider: string;
+  costUsd: number;
+  routingDecision: string;
+  recommendedSkills: Skill[];
+  sessionTotalCostUsd: number;
+}
+
+export interface SessionState {
+  id: string;
+  projectId: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  totalCostUsd: number;
+}
+
+export async function getProjects(): Promise<Project[]> {
+  const res = await fetch(`${GATEWAY_URL}/projects`, { headers: headers() });
+  if (!res.ok) throw new Error(`Failed to fetch projects: ${res.statusText}`);
+  return res.json() as Promise<Project[]>;
+}
+
+export async function getProject(id: string): Promise<Project> {
+  const res = await fetch(`${GATEWAY_URL}/projects/${id}`, {
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch project: ${res.statusText}`);
+  return res.json() as Promise<Project>;
+}
+
+export async function createProject(
+  name: string,
+  repoPath: string
+): Promise<Project> {
+  const res = await fetch(`${GATEWAY_URL}/projects`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ name, repoPath }),
+  });
+  if (!res.ok) throw new Error(`Failed to create project: ${res.statusText}`);
+  return res.json() as Promise<Project>;
+}
+
+export async function startSession(
+  projectId: string,
+  firstMessage?: string
+): Promise<SessionStartResponse> {
+  const res = await fetch(`${GATEWAY_URL}/sessions`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ projectId, firstMessage }),
+  });
+  if (!res.ok) throw new Error(`Failed to start session: ${res.statusText}`);
+  return res.json() as Promise<SessionStartResponse>;
+}
+
+export async function sendMessage(
+  sessionId: string,
+  content: string
+): Promise<MessageResponse> {
+  const res = await fetch(`${GATEWAY_URL}/sessions/${sessionId}/messages`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error(`Failed to send message: ${res.statusText}`);
+  return res.json() as Promise<MessageResponse>;
+}
+
+export async function getSession(sessionId: string): Promise<SessionState> {
+  const res = await fetch(`${GATEWAY_URL}/sessions/${sessionId}`, {
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`Failed to get session: ${res.statusText}`);
+  return res.json() as Promise<SessionState>;
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const res = await fetch(`${GATEWAY_URL}/sessions/${sessionId}`, {
+    method: "DELETE",
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete session: ${res.statusText}`);
+}
