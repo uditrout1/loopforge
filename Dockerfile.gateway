@@ -1,0 +1,37 @@
+FROM node:20-alpine AS base
+RUN npm install -g pnpm@9
+
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
+COPY packages/core/package.json ./packages/core/
+COPY packages/brain/package.json ./packages/brain/
+COPY packages/router/package.json ./packages/router/
+COPY packages/skills/package.json ./packages/skills/
+COPY packages/workflows/package.json ./packages/workflows/
+COPY packages/backlog/package.json ./packages/backlog/
+COPY packages/db/package.json ./packages/db/
+COPY packages/gateway/package.json ./packages/gateway/
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+COPY packages/ ./packages/
+RUN pnpm build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=builder /app/packages/gateway/dist ./packages/gateway/dist
+COPY --from=builder /app/packages/core/dist ./packages/core/dist
+COPY --from=builder /app/packages/brain/dist ./packages/brain/dist
+COPY --from=builder /app/packages/router/dist ./packages/router/dist
+COPY --from=builder /app/packages/skills/dist ./packages/skills/dist
+COPY --from=builder /app/packages/workflows/dist ./packages/workflows/dist
+COPY --from=builder /app/packages/backlog/dist ./packages/backlog/dist
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/gateway/package.json ./packages/gateway/
+
+EXPOSE 18790
+CMD ["node", "packages/gateway/dist/index.js"]

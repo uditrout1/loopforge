@@ -1,0 +1,7 @@
+export { createSupabaseClient } from "./client.js"
+export type { SupabaseClient } from "./client.js"
+export { createSupabaseBrainStore } from "./brain-store.js"
+export { createSupabaseProjectStore } from "./project-store.js"
+export type { ProjectStore } from "./project-store.js"
+export { createSupabaseChunkStore } from "./chunk-store.js"
+export type { ChunkStore } from "./chunk-store.js"

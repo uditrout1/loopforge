@@ -1,0 +1,27 @@
+FROM node:20-alpine AS base
+RUN npm install -g pnpm@9
+
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
+COPY apps/ui/package.json ./apps/ui/
+RUN pnpm install --frozen-lockfile
+
+FROM deps AS builder
+COPY apps/ui/ ./apps/ui/
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm --filter @devos/ui build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY --from=builder /app/apps/ui/.next/standalone ./
+COPY --from=builder /app/apps/ui/.next/static ./.next/static
+COPY --from=builder /app/apps/ui/public ./public 2>/dev/null || true
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+CMD ["node", "server.js"]

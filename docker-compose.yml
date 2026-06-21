@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    ports:
+      - "18790:18790"
+    environment:
+      - PORT=18790
+      - HOST=0.0.0.0
+      - DEVOS_API_KEY=${DEVOS_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ALLOWED_REPO_ROOTS=${ALLOWED_REPO_ROOTS:-/repos}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+    volumes:
+      - ${REPO_MOUNT_PATH:-/tmp/repos}:/repos:ro
+    depends_on:
+      - ollama
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_GATEWAY_URL=http://gateway:18790
+      - NEXT_PUBLIC_API_KEY=${DEVOS_API_KEY}
+    depends_on:
+      - gateway
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  ollama_data:
