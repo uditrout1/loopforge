@@ -18,7 +18,7 @@ jobs:
         with:
           version: 9
 
-      - uses: actions/setup-node@1d0ff469b14e2305edc47e857a9e269a55e53e9d # v4.2.0
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
