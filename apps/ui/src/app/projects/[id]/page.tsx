@@ -93,21 +93,37 @@ export default async function ProjectPage({ params }: PageProps) {
                 {project.repoPath}
               </p>
             </div>
-            <Link
-              href={`/projects/${id}/session`}
-              style={{
-                background: "#f0f0f0",
-                color: "#0a0a0a",
-                padding: "9px 18px",
-                borderRadius: "7px",
-                fontSize: "13px",
-                fontWeight: 500,
-                textDecoration: "none",
-                flexShrink: 0,
-              }}
-            >
-              New session →
-            </Link>
+            <div style={{ display: "flex", gap: "10px", flexShrink: 0 }}>
+              <Link
+                href={`/projects/${id}/vision`}
+                style={{
+                  background: "#1a1a1a",
+                  color: "#e8e8e8",
+                  padding: "9px 18px",
+                  borderRadius: "7px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  border: "1px solid #2a2a2a",
+                }}
+              >
+                Visual analysis
+              </Link>
+              <Link
+                href={`/projects/${id}/session`}
+                style={{
+                  background: "#f0f0f0",
+                  color: "#0a0a0a",
+                  padding: "9px 18px",
+                  borderRadius: "7px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                }}
+              >
+                New session →
+              </Link>
+            </div>
           </div>
 
           <div

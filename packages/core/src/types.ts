@@ -108,9 +108,23 @@ export interface ModelRequest {
   maxCostUsd?: number
 }
 
+export interface TextPart {
+  type: "text"
+  text: string
+}
+
+export interface ImagePart {
+  type: "image"
+  source:
+    | { type: "base64"; mediaType: string; data: string }
+    | { type: "url"; url: string }
+}
+
+export type MessageContent = string | Array<TextPart | ImagePart>
+
 export interface Message {
   role: "user" | "assistant" | "system"
-  content: string
+  content: MessageContent
 }
 
 export interface ModelResponse {

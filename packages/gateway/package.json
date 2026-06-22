@@ -21,6 +21,7 @@
     "@devos/workflows": "workspace:*",
     "@devos/spec": "workspace:*",
     "@devos/adr": "workspace:*",
+    "@devos/vision": "workspace:*",
     "hono": "^4.4.0",
     "@hono/node-server": "^1.12.0"
   },

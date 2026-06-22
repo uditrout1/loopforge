@@ -1,4 +1,4 @@
-import type { Message, ModelCapability, ModelResponse, ProviderType } from "@devos/core"
+import type { Message, MessageContent, TextPart, ModelCapability, ModelResponse, ProviderType } from "@devos/core"
 
 const TIER_MODELS: Record<ModelCapability, string> = {
   small: "qwen2.5:7b",
@@ -13,6 +13,14 @@ interface OllamaResponse {
   eval_count: number
 }
 
+function extractText(content: MessageContent): string {
+  if (typeof content === "string") return content
+  return content
+    .filter((p): p is TextPart => p.type === "text")
+    .map((p) => p.text)
+    .join("\n")
+}
+
 export async function callOllama(
   messages: Message[],
   capability: ModelCapability,
@@ -24,7 +32,11 @@ export async function callOllama(
   const res = await fetch(`${baseUrl}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, stream: false }),
+    body: JSON.stringify({
+      model,
+      messages: messages.map((m) => ({ role: m.role, content: extractText(m.content) })),
+      stream: false,
+    }),
   })
 
   if (!res.ok) {

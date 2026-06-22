@@ -1,4 +1,4 @@
-import type { Message, ModelCapability } from "@devos/core"
+import type { Message, MessageContent, TextPart, ModelCapability } from "@devos/core"
 
 // Heuristic complexity scoring — avoids a model call for routing decisions.
 // Score 1-2: extraction, classification, formatting → small model
@@ -16,6 +16,14 @@ const SMALL_SIGNALS = [
   "what is", "definition", "translate", "convert", "sort",
 ]
 
+function contentToText(content: MessageContent): string {
+  if (typeof content === "string") return content
+  return content
+    .filter((p): p is TextPart => p.type === "text")
+    .map((p) => p.text)
+    .join(" ")
+}
+
 export function classifyComplexity(messages: Message[]): {
   score: number
   capability: ModelCapability
@@ -29,9 +37,9 @@ export function classifyComplexity(messages: Message[]): {
     return { score: 3, capability: "medium", reason: "No user message found" }
   }
 
-  const text = lastUserMessage.content.toLowerCase()
+  const text = contentToText(lastUserMessage.content).toLowerCase()
   const totalTokenEstimate = messages.reduce(
-    (sum, m) => sum + Math.ceil(m.content.length / 4),
+    (sum, m) => sum + Math.ceil(contentToText(m.content).length / 4),
     0,
   )
 

@@ -81,8 +81,10 @@ export function createSessionsRouter(
 
     if (!session) return c.json({ error: "Session not found" }, 404)
 
-    const { content } = await c.req.json<{ content: string }>()
-    session.messages.push({ role: "user", content })
+    const { content } = await c.req.json<{ content: string | unknown[] }>()
+    const messageContent: import("@devos/core").MessageContent =
+      typeof content === "string" ? content : (content as import("@devos/core").MessageContent)
+    session.messages.push({ role: "user", content: messageContent })
 
     const project = await store.getProject(session.projectId)
     if (!project) return c.json({ error: "Project not found" }, 404)
@@ -100,7 +102,8 @@ export function createSessionsRouter(
     session.messages.push({ role: "assistant", content: response.content })
     session.totalCostUsd += response.costUsd
 
-    const skillRecs = await recommendSkills(content, 3)
+    const textContent = typeof content === "string" ? content : ""
+    const skillRecs = await recommendSkills(textContent, 3)
 
     const recentMessages = session.messages.slice(-5)
     const capabilityGaps = detectCapabilityGaps(

@@ -1,4 +1,4 @@
-import type { Message, ModelCapability, ModelResponse, ProviderType } from "@devos/core"
+import type { Message, MessageContent, ModelCapability, ModelResponse, ProviderType } from "@devos/core"
 
 // Model tiers on OpenRouter — cheapest capable model per tier
 const TIER_MODELS: Record<ModelCapability, string> = {
@@ -25,6 +25,21 @@ interface OpenRouterResponse {
   }
 }
 
+function serializeContent(content: MessageContent): string | Array<{ type: string; [key: string]: unknown }> {
+  if (typeof content === "string") return content
+  return content.map((part) => {
+    if (part.type === "text") return { type: "text", text: part.text }
+    // ImagePart
+    if (part.source.type === "base64") {
+      return {
+        type: "image",
+        source: { type: "base64", media_type: part.source.mediaType, data: part.source.data },
+      }
+    }
+    return { type: "image", source: { type: "url", url: part.source.url } }
+  })
+}
+
 export async function callOpenRouter(
   messages: Message[],
   capability: ModelCapability,
@@ -42,7 +57,10 @@ export async function callOpenRouter(
       "HTTP-Referer": "https://devos.app",
       "X-Title": "DevOS",
     },
-    body: JSON.stringify({ model, messages }),
+    body: JSON.stringify({
+      model,
+      messages: messages.map((m) => ({ role: m.role, content: serializeContent(m.content) })),
+    }),
   })
 
   if (!res.ok) {

@@ -156,3 +156,51 @@ export async function deleteSession(sessionId: string): Promise<void> {
   });
   if (!res.ok) throw new Error(`Failed to delete session: ${res.statusText}`);
 }
+
+export interface VisualAnalysis {
+  asset: {
+    id: string;
+    name: string;
+    linkedFilePaths: string[];
+    aiDescription?: string;
+  };
+  analysis: {
+    description: string;
+    uxIssues: string[];
+    accessibilityIssues: string[];
+    copyIssues: string[];
+    suggestedImprovements: string[];
+    componentNames: string[];
+    requiredCodeChanges: string[];
+  };
+}
+
+export async function analyzeScreenshot(
+  projectId: string,
+  name: string,
+  base64: string,
+  mediaType: string,
+  question: string
+): Promise<VisualAnalysis> {
+  const res = await fetch(`${GATEWAY_URL}/vision/${projectId}/screenshot`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ name, base64, mediaType, question }),
+  });
+  if (!res.ok) throw new Error(`Failed to analyze screenshot: ${res.statusText}`);
+  return res.json() as Promise<VisualAnalysis>;
+}
+
+export async function analyzeFigmaUrl(
+  projectId: string,
+  url: string,
+  question: string
+): Promise<VisualAnalysis> {
+  const res = await fetch(`${GATEWAY_URL}/vision/${projectId}/figma`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ url, question }),
+  });
+  if (!res.ok) throw new Error(`Failed to analyze Figma URL: ${res.statusText}`);
+  return res.json() as Promise<VisualAnalysis>;
+}

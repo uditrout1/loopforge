@@ -9,6 +9,7 @@ import { createBacklogRouter, BacklogService, createInMemoryTicketStore } from "
 import { listWorkflows, createRun, getRun, resumeRun, startRun } from "@devos/workflows"
 import { createSpecRouter, createInMemorySpecStore } from "@devos/spec"
 import { createADRRouter, ADRService, createInMemoryADRStore } from "@devos/adr"
+import { createVisionRouter, VisionService, createInMemoryVisualAssetStore } from "@devos/vision"
 import type { Context, Next } from "hono"
 import { BUILT_IN_PACKS } from "@devos/brain"
 import type { BrainStore } from "@devos/brain"
@@ -147,6 +148,11 @@ function main() {
   // ADR routes
   app.use("/adrs/*", requireApiKey)
   app.route("/adrs", createADRRouter(adrService))
+
+  // Vision routes
+  app.use("/vision/*", requireApiKey)
+  const visionService = new VisionService(createInMemoryVisualAssetStore(), store, routerConfig)
+  app.route("/vision", createVisionRouter(visionService))
 
   // Workflow routes
   app.use("/workflows/*", requireApiKey)

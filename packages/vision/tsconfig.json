@@ -7,13 +7,7 @@
   "include": ["src"],
   "references": [
     { "path": "../core" },
-    { "path": "../brain" },
     { "path": "../router" },
-    { "path": "../skills" },
-    { "path": "../backlog" },
-    { "path": "../workflows" },
-    { "path": "../spec" },
-    { "path": "../adr" },
-    { "path": "../vision" }
+    { "path": "../brain" }
   ]
 }
