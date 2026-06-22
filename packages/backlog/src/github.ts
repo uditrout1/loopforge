@@ -88,7 +88,7 @@ export function parseGitHubIssueEvent(
     externalId: String(issue.number),
     externalUrl: issue.html_url,
     title: issue.title,
-    description: body || undefined,
+    ...(body ? { description: body } : {}),
     type,
     status: "open",
     priorityScore: 0,
@@ -116,10 +116,11 @@ export function parseGitHubPrEvent(payload: GitHubPrPayload): {
 } | null {
   const { pull_request, action } = payload
 
+  const mergedAt = pull_request.merged_at ? new Date(pull_request.merged_at) : undefined
   return {
     action,
     prNumber: pull_request.number,
     body: pull_request.body ?? "",
-    mergedAt: pull_request.merged_at ? new Date(pull_request.merged_at) : undefined,
+    ...(mergedAt !== undefined ? { mergedAt } : {}),
   }
 }

@@ -9,6 +9,10 @@
     { "path": "../core" },
     { "path": "../brain" },
     { "path": "../router" },
-    { "path": "../skills" }
+    { "path": "../skills" },
+    { "path": "../backlog" },
+    { "path": "../workflows" },
+    { "path": "../spec" },
+    { "path": "../adr" }
   ]
 }

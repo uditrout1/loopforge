@@ -26,17 +26,27 @@ export interface Skill {
 }
 
 export interface ContextLoaded {
-  project: Project;
+  project: string;
   stack?: unknown;
-  openTickets?: unknown[];
-  relevantChunks?: unknown[];
-  lastSessionSummary?: string;
+  openTickets?: number;
+  relevantChunks?: number;
+  lastSessionSummary?: boolean;
 }
 
 export interface SessionStartResponse {
   sessionId: string;
   contextLoaded: ContextLoaded;
   recommendedSkills: Skill[];
+}
+
+export interface CapabilityGap {
+  id: string;
+  domain: string;
+  severity: string;
+  description: string;
+  suggestedSkillId?: string;
+  exampleRisk: string;
+  dismissed: boolean;
 }
 
 export interface MessageResponse {
@@ -46,6 +56,7 @@ export interface MessageResponse {
   costUsd: number;
   routingDecision: string;
   recommendedSkills: Skill[];
+  capabilityGaps: CapabilityGap[];
   sessionTotalCostUsd: number;
 }
 
@@ -83,14 +94,35 @@ export async function createProject(
   return res.json() as Promise<Project>;
 }
 
+export interface ContextPack {
+  id: string;
+  name: string;
+  description: string;
+  filePatterns: string[];
+  isBuiltIn: boolean;
+}
+
+export async function getPacks(projectId: string): Promise<ContextPack[]> {
+  const res = await fetch(`${GATEWAY_URL}/projects/${projectId}/packs`, {
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch packs: ${res.statusText}`);
+  return res.json() as Promise<ContextPack[]>;
+}
+
 export async function startSession(
   projectId: string,
-  firstMessage?: string
+  firstMessage?: string,
+  packId?: string
 ): Promise<SessionStartResponse> {
   const res = await fetch(`${GATEWAY_URL}/sessions`, {
     method: "POST",
     headers: headers(),
-    body: JSON.stringify({ projectId, firstMessage }),
+    body: JSON.stringify({
+      projectId,
+      ...(firstMessage !== undefined ? { firstMessage } : {}),
+      ...(packId !== undefined ? { packId } : {}),
+    }),
   });
   if (!res.ok) throw new Error(`Failed to start session: ${res.statusText}`);
   return res.json() as Promise<SessionStartResponse>;

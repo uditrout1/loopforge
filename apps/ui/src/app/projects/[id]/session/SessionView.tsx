@@ -5,9 +5,12 @@ import Link from "next/link";
 import {
   startSession,
   sendMessage,
+  getPacks,
   type Skill,
+  type CapabilityGap,
   type ContextLoaded,
   type MessageResponse,
+  type ContextPack,
 } from "@/lib/api";
 
 interface ChatMessage {
@@ -30,10 +33,17 @@ export function SessionView({ projectId }: SessionViewProps) {
   const [totalCost, setTotalCost] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
+  const [initializing, setInitializing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [capabilityGaps, setCapabilityGaps] = useState<CapabilityGap[]>([]);
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null);
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+
+  // Pack selector state
+  const [packs, setPacks] = useState<ContextPack[]>([]);
+  const [selectedPackId, setSelectedPackId] = useState<string | null>(null);
+  const [packsLoading, setPacksLoading] = useState(true);
+  const [packSelectorDone, setPackSelectorDone] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -46,27 +56,42 @@ export function SessionView({ projectId }: SessionViewProps) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Initialize session
+  // Load packs for the selector
   useEffect(() => {
     let cancelled = false;
-    async function init() {
+    async function loadPacks() {
       try {
-        const session = await startSession(projectId);
-        if (cancelled) return;
-        setSessionId(session.sessionId);
-        setContextLoaded(session.contextLoaded);
-        setRecommendedSkills(session.recommendedSkills ?? []);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to start session");
-        }
+        const result = await getPacks(projectId);
+        if (!cancelled) setPacks(result);
+      } catch {
+        // If packs fail to load, skip the selector
+        if (!cancelled) setPackSelectorDone(true);
       } finally {
-        if (!cancelled) setInitializing(false);
+        if (!cancelled) setPacksLoading(false);
       }
     }
-    void init();
+    void loadPacks();
     return () => { cancelled = true; };
   }, [projectId]);
+
+  async function handleStartSession() {
+    setPackSelectorDone(true);
+    setInitializing(true);
+    try {
+      const session = await startSession(
+        projectId,
+        undefined,
+        selectedPackId ?? undefined,
+      );
+      setSessionId(session.sessionId);
+      setContextLoaded(session.contextLoaded);
+      setRecommendedSkills(session.recommendedSkills ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to start session");
+    } finally {
+      setInitializing(false);
+    }
+  }
 
   async function handleSend() {
     if (!input.trim() || !sessionId || loading) return;
@@ -106,6 +131,7 @@ export function SessionView({ projectId }: SessionViewProps) {
 
       setMessages((prev) => [...prev, assistantMsg]);
       setRecommendedSkills(response.recommendedSkills ?? []);
+      setCapabilityGaps(response.capabilityGaps ?? []);
       setTotalCost(response.sessionTotalCostUsd);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to send message");
@@ -134,12 +160,91 @@ export function SessionView({ projectId }: SessionViewProps) {
     textareaRef.current?.focus();
   }
 
-  const openTicketCount = Array.isArray(contextLoaded?.openTickets)
-    ? contextLoaded.openTickets.length
-    : null;
-  const chunkCount = Array.isArray(contextLoaded?.relevantChunks)
-    ? contextLoaded.relevantChunks.length
-    : null;
+  const openTicketCount = contextLoaded?.openTickets ?? null;
+  const chunkCount = contextLoaded?.relevantChunks ?? null;
+
+  // Pack selector screen — shown before session starts
+  if (!packSelectorDone) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          background: "#0a0a0a",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 20px",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "560px" }}>
+          <Link
+            href={`/projects/${projectId}`}
+            style={{ fontSize: "12px", color: "#444", textDecoration: "none" }}
+          >
+            &larr; Back
+          </Link>
+          <h2
+            style={{
+              fontSize: "16px",
+              fontWeight: 500,
+              color: "#e8e8e8",
+              marginTop: "20px",
+              marginBottom: "6px",
+            }}
+          >
+            Choose a context pack
+          </h2>
+          <p style={{ fontSize: "13px", color: "#555", marginBottom: "24px" }}>
+            Context packs pre-load relevant code chunks for your task. Skip to use general context.
+          </p>
+
+          {packsLoading ? (
+            <p style={{ fontSize: "13px", color: "#444" }}>Loading packs&hellip;</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "28px" }}>
+              <PackCard
+                id={null}
+                name="No pack — general context"
+                description="Load context based on your first message."
+                isBuiltIn={false}
+                selected={selectedPackId === null}
+                onSelect={() => setSelectedPackId(null)}
+              />
+              {packs.map((pack) => (
+                <PackCard
+                  key={pack.id}
+                  id={pack.id}
+                  name={pack.name}
+                  description={pack.description}
+                  isBuiltIn={pack.isBuiltIn}
+                  selected={selectedPackId === pack.id}
+                  onSelect={() => setSelectedPackId(pack.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => void handleStartSession()}
+            disabled={packsLoading}
+            style={{
+              background: packsLoading ? "#1a1a1a" : "#e8e8e8",
+              color: packsLoading ? "#333" : "#0a0a0a",
+              border: "none",
+              borderRadius: "8px",
+              padding: "10px 24px",
+              fontSize: "13px",
+              fontWeight: 500,
+              cursor: packsLoading ? "not-allowed" : "pointer",
+            }}
+          >
+            Start session
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (initializing) {
     return (
@@ -188,7 +293,7 @@ export function SessionView({ projectId }: SessionViewProps) {
               textDecoration: "none",
             }}
           >
-            ← {contextLoaded?.project?.name ?? projectId}
+            ← {contextLoaded?.project ?? projectId}
           </Link>
           {sessionId && (
             <span
@@ -222,8 +327,14 @@ export function SessionView({ projectId }: SessionViewProps) {
           <p style={{ fontSize: "12px", color: "#555" }}>
             Loaded:{" "}
             <span style={{ color: "#888" }}>
-              {contextLoaded.project?.name ?? "unknown project"}
+              {contextLoaded.project ?? "unknown project"}
             </span>
+            {selectedPackId !== null && (() => {
+              const pack = packs.find((p) => p.id === selectedPackId);
+              return pack ? (
+                <>{" · "}<span style={{ color: "#666" }}>{pack.name}</span></>
+              ) : null;
+            })()}
             {openTicketCount !== null && (
               <>
                 {" · "}
@@ -320,8 +431,8 @@ export function SessionView({ projectId }: SessionViewProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Skills sidebar */}
-        {recommendedSkills.length > 0 && (
+        {/* Right sidebar: skills + capability gaps */}
+        {(recommendedSkills.length > 0 || capabilityGaps.length > 0) && (
           <div
             style={{
               width: "240px",
@@ -329,31 +440,59 @@ export function SessionView({ projectId }: SessionViewProps) {
               padding: "20px 16px",
               overflowY: "auto",
               flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "24px",
             }}
           >
-            <p
-              style={{
-                fontSize: "11px",
-                color: "#444",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                marginBottom: "14px",
-              }}
-            >
-              Suggested skills
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {recommendedSkills.slice(0, 3).map((skill) => (
-                <SkillChip
-                  key={skill.id}
-                  skill={skill}
-                  active={activeSkill?.id === skill.id}
-                  hovered={hoveredSkill === skill.id}
-                  onActivate={() => activateSkill(skill)}
-                  onHoverChange={(h) => setHoveredSkill(h ? skill.id : null)}
-                />
-              ))}
-            </div>
+            {recommendedSkills.length > 0 && (
+              <div>
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#444",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: "14px",
+                  }}
+                >
+                  Suggested skills
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {recommendedSkills.slice(0, 3).map((skill) => (
+                    <SkillChip
+                      key={skill.id}
+                      skill={skill}
+                      active={activeSkill?.id === skill.id}
+                      hovered={hoveredSkill === skill.id}
+                      onActivate={() => activateSkill(skill)}
+                      onHoverChange={(h) => setHoveredSkill(h ? skill.id : null)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {capabilityGaps.length > 0 && (
+              <div>
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#444",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: "14px",
+                  }}
+                >
+                  Expertise gaps
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {capabilityGaps.map((gap) => (
+                    <GapChip key={gap.id} gap={gap} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -461,6 +600,78 @@ export function SessionView({ projectId }: SessionViewProps) {
   );
 }
 
+function PackCard({
+  id,
+  name,
+  description,
+  isBuiltIn,
+  selected,
+  onSelect,
+}: {
+  id: string | null;
+  name: string;
+  description: string;
+  isBuiltIn: boolean;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "12px",
+        background: selected ? "#141414" : "transparent",
+        border: `1px solid ${selected ? "#2a2a2a" : "#1a1a1a"}`,
+        borderRadius: "8px",
+        padding: "12px 14px",
+        cursor: "pointer",
+        textAlign: "left",
+        width: "100%",
+        transition: "all 0.1s",
+      }}
+    >
+      <div
+        style={{
+          width: "14px",
+          height: "14px",
+          borderRadius: "50%",
+          border: `2px solid ${selected ? "#888" : "#333"}`,
+          flexShrink: 0,
+          marginTop: "2px",
+          background: selected ? "#888" : "transparent",
+          boxSizing: "border-box",
+        }}
+      />
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
+          <span style={{ fontSize: "13px", fontWeight: 500, color: selected ? "#e8e8e8" : "#888" }}>
+            {name}
+          </span>
+          {id !== null && isBuiltIn && (
+            <span
+              style={{
+                fontSize: "10px",
+                color: "#444",
+                background: "#111",
+                border: "1px solid #1e1e1e",
+                borderRadius: "3px",
+                padding: "1px 5px",
+              }}
+            >
+              built-in
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: "12px", color: "#555", margin: 0, lineHeight: "1.4" }}>
+          {description}
+        </p>
+      </div>
+    </button>
+  );
+}
+
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
 
@@ -513,6 +724,113 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           {message.content}
         </div>
       </div>
+    </div>
+  );
+}
+
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: "#ef4444",
+  high: "#f97316",
+  medium: "#eab308",
+  low: "#6b7280",
+};
+
+function GapChip({ gap }: { gap: CapabilityGap }) {
+  const [hovered, setHovered] = useState(false);
+  const color = SEVERITY_COLORS[gap.severity] ?? "#6b7280";
+
+  return (
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          background: "#141414",
+          border: "1px solid #222",
+          borderRadius: "6px",
+          padding: "8px 10px",
+          cursor: "default",
+        }}
+      >
+        <span
+          style={{
+            display: "inline-block",
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
+            background: color,
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontSize: "12px",
+            color: "#888",
+            textTransform: "capitalize",
+          }}
+        >
+          {gap.domain}
+        </span>
+      </div>
+
+      {hovered && (
+        <div
+          style={{
+            position: "absolute",
+            right: "calc(100% + 8px)",
+            top: "0",
+            width: "220px",
+            background: "#1a1a1a",
+            border: "1px solid #2a2a2a",
+            borderRadius: "8px",
+            padding: "12px",
+            zIndex: 10,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "6px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "10px",
+                fontWeight: 600,
+                color,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              {gap.severity}
+            </span>
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: 500,
+                color: "#e8e8e8",
+                textTransform: "capitalize",
+              }}
+            >
+              {gap.domain}
+            </span>
+          </div>
+          <p style={{ fontSize: "12px", color: "#888", lineHeight: "1.5", marginBottom: "8px" }}>
+            {gap.description}
+          </p>
+          <p style={{ fontSize: "11px", color: "#555", lineHeight: "1.5" }}>
+            Risk: {gap.exampleRisk}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

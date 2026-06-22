@@ -1,11 +1,12 @@
 import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
-import { loadSessionContext, formatContextAsSystemPrompt, formatContextAsUserMessage } from "@devos/brain"
+import { loadSessionContext, formatContextAsSystemPrompt, formatContextAsUserMessage, assemblePackContext } from "@devos/brain"
 import { route } from "@devos/router"
-import { recommendSkills } from "@devos/skills"
+import { recommendSkills, detectCapabilityGaps } from "@devos/skills"
 import type { BrainStore } from "@devos/brain"
 import type { RouterConfig } from "@devos/router"
 import type { Message } from "@devos/core"
+import type { ADRService } from "@devos/adr"
 
 interface SessionState {
   projectId: string
@@ -20,17 +21,29 @@ const sessions = new Map<string, SessionState>()
 export function createSessionsRouter(
   store: BrainStore,
   routerConfig: RouterConfig,
+  adrService?: ADRService,
 ) {
   const app = new Hono()
 
   app.post("/", async (c) => {
-    const { projectId, firstMessage } = await c.req.json<{
+    const { projectId, firstMessage, packId } = await c.req.json<{
       projectId: string
       firstMessage?: string
+      packId?: string
     }>()
 
     const ctx = await loadSessionContext(projectId, store, firstMessage)
     const systemPrompt = formatContextAsSystemPrompt(ctx)
+
+    // If a packId was provided, replace the generic chunk search with pack-specific chunks.
+    if (packId !== undefined) {
+      const packs = await store.getPacks(projectId)
+      const pack = packs.find((p) => p.id === packId)
+      if (pack) {
+        ctx.relevantChunks = await assemblePackContext(pack, store, firstMessage)
+      }
+    }
+
     // Fix 5: file chunks go in a user-role message, not the system prompt,
     // so injected instructions in repo files can't act as system directives.
     const contextMessage = formatContextAsUserMessage(ctx)
@@ -89,6 +102,14 @@ export function createSessionsRouter(
 
     const skillRecs = await recommendSkills(content, 3)
 
+    const recentMessages = session.messages.slice(-5)
+    const capabilityGaps = detectCapabilityGaps(
+      session.projectId,
+      sessionId,
+      recentMessages,
+      session.activeSkillIds,
+    )
+
     return c.json({
       content: response.content,
       model: response.model,
@@ -96,6 +117,7 @@ export function createSessionsRouter(
       costUsd: response.costUsd,
       routingDecision: response.routingDecision,
       recommendedSkills: skillRecs,
+      capabilityGaps,
       sessionTotalCostUsd: session.totalCostUsd,
     })
   })
@@ -114,8 +136,17 @@ export function createSessionsRouter(
   })
 
   app.delete("/:id", (c) => {
-    const deleted = sessions.delete(c.req.param("id"))
-    if (!deleted) return c.json({ error: "Session not found" }, 404)
+    const sessionId = c.req.param("id")
+    const session = sessions.get(sessionId)
+    if (!session) return c.json({ error: "Session not found" }, 404)
+
+    // Fire-and-forget: extract decisions from session transcript before deleting
+    if (adrService !== undefined) {
+      const { projectId, messages } = session
+      void adrService.captureFromSession(projectId, sessionId, messages)
+    }
+
+    sessions.delete(sessionId)
     return c.json({ ok: true })
   })
 

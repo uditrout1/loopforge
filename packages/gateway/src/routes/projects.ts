@@ -2,6 +2,7 @@ import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
 import { resolve, sep } from "node:path"
 import { indexRepository } from "@devos/brain"
+import type { BrainStore } from "@devos/brain"
 import type { Project } from "@devos/core"
 
 // Fix 1: path traversal — only allow repos under configured roots.
@@ -41,7 +42,7 @@ function validateRepoPath(raw: string): string {
 
 const projects = new Map<string, Project>()
 
-export function createProjectsRouter() {
+export function createProjectsRouter(store?: BrainStore) {
   const app = new Hono()
 
   app.post("/", async (c) => {
@@ -103,6 +104,59 @@ export function createProjectsRouter() {
     const project = projects.get(c.req.param("id"))
     if (!project) return c.json({ error: "Project not found" }, 404)
     return c.json(project)
+  })
+
+  // ── Pack routes ────────────────────────────────────────────────────────────
+
+  app.get("/:id/packs", async (c) => {
+    if (!store) return c.json({ error: "Store not configured" }, 500)
+    const projectId = c.req.param("id")
+    if (!projects.has(projectId)) return c.json({ error: "Project not found" }, 404)
+    const packs = await store.getPacks(projectId)
+    return c.json(packs)
+  })
+
+  app.post("/:id/packs", async (c) => {
+    if (!store) return c.json({ error: "Store not configured" }, 500)
+    const projectId = c.req.param("id")
+    if (!projects.has(projectId)) return c.json({ error: "Project not found" }, 404)
+    const body = await c.req.json<{
+      name: string
+      description: string
+      filePatterns: string[]
+      ticketLabels?: string[]
+      workflowIds?: string[]
+    }>()
+    const pack = {
+      id: `pack-${randomUUID()}`,
+      projectId,
+      name: String(body.name).slice(0, 256),
+      description: String(body.description).slice(0, 1024),
+      filePatterns: Array.isArray(body.filePatterns) ? body.filePatterns : [],
+      ticketLabels: Array.isArray(body.ticketLabels) ? body.ticketLabels : [],
+      workflowIds: Array.isArray(body.workflowIds) ? body.workflowIds : [],
+      isBuiltIn: false,
+      createdAt: new Date(),
+    }
+    await store.savePack(pack)
+    return c.json(pack, 201)
+  })
+
+  app.delete("/:id/packs/:packId", async (c) => {
+    if (!store) return c.json({ error: "Store not configured" }, 500)
+    const projectId = c.req.param("id")
+    const packId = c.req.param("packId")
+    if (!projects.has(projectId)) return c.json({ error: "Project not found" }, 404)
+
+    // Refuse to delete built-in packs
+    const packs = await store.getPacks(projectId)
+    const target = packs.find((p) => p.id === packId)
+    if (!target) return c.json({ error: "Pack not found" }, 404)
+    if (target.isBuiltIn) return c.json({ error: "Cannot delete a built-in pack" }, 400)
+
+    const deleted = await store.deletePack(projectId, packId)
+    if (!deleted) return c.json({ error: "Pack not found" }, 404)
+    return c.json({ ok: true })
   })
 
   return { router: app, projectsStore: projects }

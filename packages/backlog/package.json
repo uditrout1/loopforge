@@ -12,7 +12,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@devos/core": "workspace:*"
+    "@devos/core": "workspace:*",
+    "hono": "^4.4.0"
   },
   "devDependencies": {
     "@types/node": "*",

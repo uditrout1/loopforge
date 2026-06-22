@@ -1,4 +1,4 @@
-import type { SessionContext, Project, Ticket, ContextChunk, Message } from "@devos/core"
+import type { SessionContext, Project, Ticket, ContextChunk, ContextPack, Message } from "@devos/core"
 
 export interface BrainStore {
   getProject(projectId: string): Promise<Project | null>
@@ -6,6 +6,9 @@ export interface BrainStore {
   getOpenTickets(projectId: string, limit: number): Promise<Ticket[]>
   searchChunks(projectId: string, query: string, limit: number): Promise<ContextChunk[]>
   saveSessionSummary(projectId: string, summary: string): Promise<void>
+  getPacks(projectId: string): Promise<ContextPack[]>
+  savePack(pack: ContextPack): Promise<void>
+  deletePack(projectId: string, packId: string): Promise<boolean>
 }
 
 export async function loadSessionContext(

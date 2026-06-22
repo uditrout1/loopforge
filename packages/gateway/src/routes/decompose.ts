@@ -42,8 +42,7 @@ export function createDecomposeRouter(
     const openTicketTitles = openTickets.map((t) => t.title)
 
     // Derive stack description from project or body override
-    const stackDescription =
-      body.stackDescription ??
+    const derivedStack =
       [
         ...project.stack.languages,
         ...project.stack.frameworks,
@@ -51,8 +50,8 @@ export function createDecomposeRouter(
         ...project.stack.infrastructure,
       ]
         .filter(Boolean)
-        .join(", ") ||
-      "TypeScript"
+        .join(", ") || "TypeScript"
+    const stackDescription = body.stackDescription ?? derivedStack
 
     // 4. Call decomposeEpic
     const result = await decomposeEpic(

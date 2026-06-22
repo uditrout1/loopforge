@@ -135,7 +135,7 @@ async function executeNode(
     if (cp !== undefined) {
       cp.resolvedAt = new Date()
       cp.decision = resolution.decision
-      cp.input = resolution.input
+      if (resolution.input !== undefined) cp.input = resolution.input
     }
 
     run.status = "running"
@@ -392,6 +392,6 @@ export async function* executeWorkflow(
 
   run.status = "completed"
   run.completedAt = new Date()
-  run.currentNodeId = undefined
-  yield { ...run }
+  const { currentNodeId: _done, ...completedRun } = run
+  yield completedRun as WorkflowRun
 }

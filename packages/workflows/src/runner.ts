@@ -65,7 +65,7 @@ export async function resumeRun(
   }
 
   checkpointResolvers.delete(resolverKey)
-  resolver({ decision, input })
+  resolver({ decision, ...(input !== undefined ? { input } : {}) })
 
   // Allow the generator to advance
   const gen = activeGenerators.get(runId)

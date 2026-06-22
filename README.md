@@ -1,25 +1,21 @@
 # DevOS
 
-**The AI developer operating system.**
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-DevOS is an open-source platform that gives software teams a shared brain: persistent project context, intelligent skill discovery, multi-provider model routing, an AI-maintained backlog, multi-agent workflows, and automated SDLC gates — all in one place.
-
-Inspired by how [OpenClaw](https://github.com/openclaw/openclaw) built a gateway-first, plugin-first, local-first AI assistant, DevOS applies the same principles to the software development lifecycle.
+DevOS is an AI harness for software teams that owns the full software development lifecycle — from idea to production. It is not a coding assistant; it is the operating system your team's AI runs on.
 
 ---
 
-## Why DevOS
+## What DevOS Is NOT / What DevOS IS
 
-Every team using AI tooling today solves the same problems independently:
-
-- **Context loss** — every AI session starts from zero
-- **Tool fragmentation** — 5+ separate tools with no shared intelligence
-- **Uncontrolled cost** — frontier models for every task, no routing
-- **No output verification** — AI results accepted without validation
-- **Stale backlogs** — stakeholder feedback never makes it to tickets
-- **Security gaps** — API keys everywhere, no audit trail
-
-DevOS solves all of these as a single platform.
+| NOT | IS |
+|---|---|
+| A coding copilot | A full SDLC platform |
+| A chat wrapper around an LLM | A persistent project brain with indexed memory |
+| A one-model solution | An intelligent model router (small → frontier, cloud → on-prem) |
+| A task tracker | An AI-maintained backlog with GitHub integration |
+| A script runner | A multi-agent workflow engine |
+| A documentation generator | A spec-driven development system with approval gates |
 
 ---
 
@@ -27,144 +23,219 @@ DevOS solves all of these as a single platform.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                  Developer UI                       │
-│         (chat · canvas · backlog · dashboard)       │
-└──────────────────────┬──────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────┐
-│                   Gateway                           │  ← control plane
-│            (Hono · REST + WebSocket)                │
-└──────┬───────────┬──────────────┬───────────────────┘
-       │           │              │
-  ┌────▼───┐  ┌────▼────┐  ┌─────▼──────┐
-  │ Brain  │  │  Skills │  │  Workflows │
-  │ Store  │  │Registry │  │  Runtime   │
-  └────┬───┘  └─────────┘  └────────────┘
-       │
-  ┌────▼──────────────┐
-  │   Model Router    │
-  │  OpenRouter │     │
-  │  Ollama     │     │
-  └─────────────┘     │
+│                    DevOS Gateway                     │
+│                   (Hono · :18790)                    │
+├──────────┬──────────┬──────────┬──────────┬─────────┤
+│ Projects │ Sessions │ Backlog  │ Workflows│  Specs  │
+│  + Packs │ + ADRs   │ + GitHub │ + Decomp │  + ADRs │
+└────┬─────┴────┬─────┴────┬─────┴────┬─────┴────┬────┘
+     │          │          │          │          │
+     ▼          ▼          ▼          ▼          ▼
+  @devos/   @devos/   @devos/   @devos/   @devos/
+   brain    router    backlog  workflows   spec/adr
+     │          │
+     ├──────────┤
+     ▼          ▼
+  Supabase   OpenRouter
+ (pgvector)  + Ollama
 ```
 
 ### Packages
 
-| Package | Description |
+| Package | Responsibility |
 |---|---|
-| `@devos/core` | Shared TypeScript types and interfaces — no implementations |
-| `@devos/brain` | Repository indexer, context chunker, session context loader |
-| `@devos/router` | Multi-provider model router with complexity-based routing |
-| `@devos/skills` | Built-in skill registry and keyword-based recommender |
-| `@devos/gateway` | Hono control plane — REST API, session management, routing |
+| `@devos/core` | Shared TypeScript types — no implementations, no runtime deps |
+| `@devos/brain` | Repo indexer, chunker, context loader, built-in context packs |
+| `@devos/router` | Model routing: OpenRouter (cloud) + Ollama (on-prem), complexity tiers, data classification |
+| `@devos/skills` | 8 built-in skills, keyword recommender, capability gap advisor |
+| `@devos/workflows` | Multi-agent workflow engine, 4 built-in workflows, epic decomposer |
+| `@devos/backlog` | GitHub Issues integration, ticket classification, AI prioritization |
+| `@devos/adr` | Architecture Decision Record extraction and storage |
+| `@devos/spec` | PRD, architecture doc, and technical spec generation with approval workflows |
+| `@devos/db` | Supabase persistence adapter (pgvector for embeddings) |
+| `@devos/gateway` | Hono HTTP gateway (port 18790), all routes, auth middleware |
+| `apps/ui` | Next.js 15 developer UI — chat, skill browser, pack selector, cost dashboard |
+
+**Package dependency order:** `core` ← `brain`, `router`, `skills`, `backlog`, `adr`, `spec` ← `workflows` ← `gateway`
+
+---
+
+## Features by Lifecycle Stage
+
+### Spec
+- **Spec-Driven Development** — generate PRDs, architecture docs, and technical specs via `POST /specs/:projectId/generate`
+- **Approval workflows** — specs must be approved before downstream tasks are created
+- **ADR extraction** — architectural decisions captured automatically from sessions; exportable as markdown
+
+### Code
+- **Project Brain** — index a repo once; every session starts fully loaded with stack detection, conventions, and TODO surfacing
+- **Context Packs** — curated context slices per task type (auth, database, API, UI, etc.) loaded at session start via `packId`
+- **Capability Gap Advisor** — surfaces expertise gaps proactively (security, a11y, performance, testing, architecture, docs)
+- **8 built-in skills** — `debug`, `security-audit`, `code-review`, `test-generation`, `ui-fix`, `plan-feature`, `explain`, `changelog`
+
+### Review
+- **Multi-Agent Workflows** — PR review, bug investigation, release prep, nightly security scan
+- **Intelligent Model Routing** — complexity-based tier selection: simple tasks → small model (Qwen 7B), code gen → medium, debugging/architecture → frontier
+- **Data Classification Enforcement** — confidential/restricted projects automatically routed to on-prem Ollama; data never leaves your network
+
+### Release
+- **Epic Decomposer** — `POST /projects/:id/decompose` turns an epic description into sprint-ready tickets with file links pre-populated
+- **AI-Maintained Backlog** — GitHub Issues integration, AI prioritization, health checks via `GET /backlog/tickets/:projectId`
+- **GitHub Webhook** — live ticket sync on push/PR events via `POST /backlog/webhook/github`
+
+### Learn
+- **ADR Store** — all architectural decisions queryable and exportable per project
+- **Cost Dashboard** — token usage and cost breakdown by session, project, and model in the UI
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-- An [OpenRouter](https://openrouter.ai) API key (for cloud models)
-- [Ollama](https://ollama.ai) running locally (optional, for on-prem models)
-
-### Install
-
 ```bash
-git clone https://github.com/your-org/devos
-cd devos
-pnpm install
-```
+# 1. Clone
+git clone https://github.com/your-org/devos && cd devos && pnpm install
 
-### Configure
-
-```bash
+# 2. Configure
 cp .env.example .env
-# Add your OPENROUTER_API_KEY to .env
-```
+# Set at minimum: OPENROUTER_API_KEY
 
-### Run
-
-```bash
-pnpm build
-pnpm --filter @devos/gateway start
-# Gateway running at http://localhost:18790
+# 3. Run
+pnpm dev
+# Gateway: http://localhost:18790
+# UI:      http://localhost:3000
 ```
 
 ### Connect a project
 
 ```bash
-# Connect your repo
 curl -X POST http://localhost:18790/projects \
   -H "Content-Type: application/json" \
-  -d '{"name": "my-app", "repoPath": "/path/to/your/repo"}'
+  -d '{"name": "my-app", "repoPath": "/path/to/repo"}'
 
-# Start a session (context loads automatically)
+# Start a session with a context pack
 curl -X POST http://localhost:18790/sessions \
   -H "Content-Type: application/json" \
-  -d '{"projectId": "<id from above>", "firstMessage": "where should I start?"}'
+  -d '{"projectId": "<id>", "packId": "auth"}'
 ```
 
 ---
 
-## Features
+## API Reference
 
-### Project Brain
-Connect a repository and DevOS indexes it: stack detection, convention extraction, TODO surfacing. Every session starts fully loaded — no re-explaining your codebase.
+All routes under `/projects/*`, `/sessions/*`, `/backlog/*`, `/workflows/*`, `/adrs/*`, `/specs/*`, `/decompose/*` require `X-API-Key: <DEVOS_API_KEY>` when `HOST != 127.0.0.1`.
 
-### Skill Discovery
-8 built-in skills (debug, security-audit, code-review, test-generation, ui-fix, plan-feature, explain, changelog) with keyword-based recommendation. Skills surface automatically based on what you're working on.
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/projects` | Connect a repo |
+| `POST` | `/sessions` | Start a session (optional `packId`) |
+| `POST` | `/sessions/:id/messages` | Send a message → AI response + skill recommendations + capability gaps |
+| `POST` | `/projects/:id/decompose` | Decompose an epic into sprint-ready tickets |
+| `POST` | `/specs/:projectId/generate` | Generate PRD / architecture / technical spec |
+| `POST` | `/specs/:projectId/:id/approve` | Approve a spec |
+| `GET` | `/adrs/:projectId` | List ADRs for a project |
+| `GET` | `/adrs/:projectId/export` | Export all ADRs as markdown |
+| `GET` | `/workflows` | List available workflows |
+| `POST` | `/workflows/:id/runs` | Start a workflow run |
+| `GET` | `/backlog/tickets/:projectId` | Prioritized ticket list |
+| `POST` | `/backlog/webhook/github` | GitHub webhook receiver |
 
-### Model Router
-Routes tasks to the right model based on complexity:
-- Simple tasks (rename, format, classify) → small model (Qwen 7B)
-- Code generation, explanation → medium model
-- Debugging, architecture, reasoning → frontier model
+---
 
-Confidential/restricted projects are automatically routed to on-prem Ollama — data never leaves your network.
+## Environment Variables
 
-### Multi-Agent Workflows *(coming soon)*
-Visual workflow builder. Define agent graphs with parallel fan-out, conditional branching, human-in-the-loop checkpoints. Built-in workflows: PR review, bug investigation, release prep, nightly security scan.
+```bash
+# Model routing
+OPENROUTER_API_KEY=       # Cloud model access (required for cloud tiers)
+OLLAMA_BASE_URL=          # On-prem model endpoint (default: http://localhost:11434)
 
-### AI-Maintained Backlog *(coming soon)*
-Stakeholder feedback ingested from GitHub Issues, Slack, email. Tickets created, prioritized, and updated automatically as code is committed and PRs merge.
+# Gateway
+PORT=18790
+HOST=127.0.0.1            # Set to 0.0.0.0 for remote access (requires DEVOS_API_KEY)
+DEVOS_API_KEY=            # Required when HOST != 127.0.0.1
+ALLOWED_REPO_ROOTS=       # Colon-separated allowed repo paths
+CORS_ORIGINS=             # Comma-separated allowed origins
+
+# Persistence
+SUPABASE_URL=             # pgvector-backed persistence (production)
+SUPABASE_SERVICE_ROLE_KEY=
+
+# GitHub integration
+GITHUB_WEBHOOK_SECRET=    # For GitHub webhook verification
+```
+
+---
+
+## Deployment
+
+### Docker Compose
+
+```yaml
+services:
+  gateway:
+    build: .
+    ports:
+      - "18790:18790"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 18790
+      DEVOS_API_KEY: ${DEVOS_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OLLAMA_BASE_URL: http://ollama:11434
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ui:
+    build: apps/ui
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: http://gateway:18790
+
+volumes:
+  ollama_data:
+```
+
+For confidential/restricted workloads, omit `OPENROUTER_API_KEY` — all requests fall back to Ollama automatically.
 
 ---
 
 ## Roadmap
 
+### Shipped
 - [x] Project brain (repo indexing + context loading)
-- [x] Skill registry and recommender
-- [x] Multi-provider model routing (OpenRouter + Ollama)
-- [x] Gateway control plane (Hono)
-- [ ] Next.js developer UI
-- [ ] Multi-agent workflow engine + visual builder
-- [ ] Supabase persistence + pgvector semantic search
-- [ ] GitHub Issues backlog integration
-- [ ] PR review workflow (security + code review)
-- [ ] Release pipeline (readiness scoring + staged rollout)
-- [ ] Slack / email feedback ingestion
-- [ ] Workflow marketplace
+- [x] Context packs (curated per task type)
+- [x] Skill registry, keyword recommender, capability gap advisor
+- [x] Multi-provider model routing (OpenRouter + Ollama), complexity tiers, data classification
+- [x] Multi-agent workflow engine + 4 built-in workflows
+- [x] Epic decomposer
+- [x] GitHub Issues backlog integration + AI prioritization
+- [x] ADR extraction and storage
+- [x] Spec-driven development (PRD / architecture / technical spec + approval)
+- [x] Supabase persistence + pgvector semantic search
+- [x] Next.js 15 developer UI
+
+### Coming
+- [ ] **Visual Context Engine** — understands screenshots, Figma designs, and wireframes; attaches visual context to sessions automatically
+- [ ] Workflow marketplace — community-contributed workflow definitions
+- [ ] Slack / email feedback ingestion into backlog
+- [ ] PR review workflow with security scoring and staged rollout gate
+- [ ] Workflow visual builder (drag-and-drop agent graph)
+- [ ] MCP server mode — expose DevOS as an MCP server to any compatible client
 
 ---
 
 ## Contributing
 
-We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, conventions, and how to add skills, workflows, context packs, and spec generators.
 
-Found a bug? [Open an issue](../../issues/new?template=bug_report.md).  
+Found a bug? [Open an issue](../../issues/new?template=bug_report.md).
 Have a feature idea? [Start a discussion](../../discussions).
-
----
-
-## Self-hosting
-
-DevOS is designed to run on your own infrastructure. No data leaves your network unless you explicitly configure a cloud model provider.
-
-For on-prem deployments with confidential or restricted data classification, all requests are automatically routed to your local Ollama instance.
-
-Docker support coming in v0.2.
 
 ---
 

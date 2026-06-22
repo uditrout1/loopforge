@@ -135,7 +135,7 @@ export function createBacklogRouter(service: BacklogService, webhookSecret?: str
     }
 
     try {
-      await service.store.updateTicketStatus(id, body.status as TicketStatus)
+      await service.updateTicketStatus(id, body.status as TicketStatus)
       const ticket = await service.store.getTicket(id)
       return c.json({ ticket })
     } catch (err) {

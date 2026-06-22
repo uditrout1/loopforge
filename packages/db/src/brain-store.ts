@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { Project, ContextChunk, Ticket, TicketType, TicketStatus } from "@devos/core"
+import type { Project, ContextChunk, Ticket, TicketType, TicketStatus, ContextPack } from "@devos/core"
 import type { BrainStore } from "@devos/brain"
 import type { SupabaseClient } from "./client.js"
 
@@ -194,5 +194,27 @@ export function createSupabaseBrainStore(client: SupabaseClient): BrainStore {
         throw new Error(`saveSessionSummary failed: ${error.message}`)
       }
     },
+
+    // Pack storage — kept in-memory per Supabase store instance until a packs table is added
+    async getPacks(projectId: string): Promise<ContextPack[]> {
+      return packStore.get(projectId) ?? []
+    },
+
+    async savePack(pack: ContextPack): Promise<void> {
+      const existing = packStore.get(pack.projectId) ?? []
+      const replaced = existing.filter((p) => p.id !== pack.id)
+      packStore.set(pack.projectId, [...replaced, pack])
+    },
+
+    async deletePack(projectId: string, packId: string): Promise<boolean> {
+      const existing = packStore.get(projectId) ?? []
+      const next = existing.filter((p) => p.id !== packId)
+      if (next.length === existing.length) return false
+      packStore.set(projectId, next)
+      return true
+    },
   }
 }
+
+// Module-level pack cache (replaced by a packs table in a future migration)
+const packStore = new Map<string, ContextPack[]>()

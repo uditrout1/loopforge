@@ -1,6 +1,6 @@
 # Contributing to DevOS
 
-Thank you for your interest in contributing. This document covers how to set up a development environment, the conventions we follow, and the process for getting changes merged.
+This document covers development setup, conventions, and how to extend DevOS with new skills, workflows, context packs, and spec generators.
 
 ---
 
@@ -22,16 +22,19 @@ pnpm install
 ### Build
 
 ```bash
-pnpm build          # build all packages
-pnpm --filter @devos/gateway dev   # run gateway in watch mode
+pnpm build                              # build all packages
+pnpm dev                                # run gateway + UI in watch mode
+pnpm --filter @devos/gateway dev        # gateway only
+pnpm --filter apps/ui dev              # UI only
 ```
 
 ### Environment
 
 ```bash
 cp .env.example .env
-# Set OPENROUTER_API_KEY for cloud model routing
-# Set OLLAMA_BASE_URL if running local models
+# Minimum: set OPENROUTER_API_KEY
+# For on-prem: set OLLAMA_BASE_URL
+# For persistence: set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
 ```
 
 ---
@@ -40,16 +43,24 @@ cp .env.example .env
 
 ```
 packages/
-  core/       — shared types only, no implementations
-  brain/      — repo indexer, chunker, session context
-  router/     — model routing (OpenRouter + Ollama)
-  skills/     — skill registry and built-in skills
-  gateway/    — Hono API server (the control plane)
+  core/       — shared types only, no implementations, no runtime deps
+  brain/      — repo indexer, chunker, context loader, built-in context packs
+  router/     — model routing (OpenRouter + Ollama), complexity tiers, data classification
+  skills/     — skill registry, built-in skills, keyword recommender, capability gap advisor
+  workflows/  — multi-agent workflow engine, built-in workflows, epic decomposer
+  backlog/    — GitHub Issues integration, ticket classification, AI prioritization
+  adr/        — ADR extraction and storage
+  spec/       — PRD/architecture/technical spec generation and approval workflows
+  db/         — Supabase persistence adapter (pgvector for embeddings)
+  gateway/    — Hono HTTP gateway (port 18790), all routes, auth middleware
 apps/
-  ui/         — Next.js developer interface (coming soon)
+  ui/         — Next.js 15 developer UI (chat, skill browser, pack selector, cost dashboard)
 ```
 
-**Package dependency order:** `core` ← `brain`, `router`, `skills` ← `gateway`
+**Package dependency order:**
+```
+core ← brain, router, skills, backlog, adr, spec ← workflows ← gateway
+```
 
 ---
 
@@ -69,7 +80,6 @@ apps/
 - `@devos/core` exports types only — no runtime dependencies
 - Provider implementations (OpenRouter, Ollama) are swappable behind the same interface
 - New providers go in `packages/router/src/providers/`
-- New built-in skills go in `packages/skills/src/built-in.ts`
 
 ### Git
 
@@ -82,14 +92,14 @@ apps/
 
 ## Adding a Skill
 
-Skills live in `packages/skills/src/built-in.ts`. A skill needs:
+Skills live in `packages/skills/src/built-in.ts`. A skill requires:
 
 ```typescript
 {
   id: "unique-kebab-id",
   name: "Human Readable Name",
   description: "One sentence — used for similarity search. Be specific.",
-  triggerKeywords: ["keyword1", "keyword2"],   // what phrases activate it
+  triggerKeywords: ["keyword1", "keyword2"],   // phrases that activate it
   promptTemplate: `Your skill's system prompt here.`,
   requiredTools: [],
   requiredModelCapability: "small" | "medium" | "frontier",
@@ -99,7 +109,95 @@ Skills live in `packages/skills/src/built-in.ts`. A skill needs:
 }
 ```
 
-After adding: rebuild and verify the skill appears in `GET /skills` (once that route exists) and that keyword matching works.
+After adding: rebuild and verify the skill appears in `GET /skills` and keyword matching works.
+
+Skills that require frontier models should justify the requirement in a comment — the default preference is the lowest tier that produces acceptable output.
+
+---
+
+## Adding a Workflow
+
+Workflows live in `packages/workflows/src/built-in/`. Each workflow is a directed agent graph.
+
+1. Create `packages/workflows/src/built-in/<your-workflow>.ts`
+2. Export a `WorkflowDefinition` (type in `@devos/core`):
+
+```typescript
+export const myWorkflow: WorkflowDefinition = {
+  id: "my-workflow",
+  name: "Human Readable Name",
+  description: "What this workflow does and when to use it.",
+  steps: [
+    {
+      id: "step-1",
+      agentRole: "...",           // system prompt for this step's agent
+      inputs: ["$initial"],       // step inputs ($ prefix = workflow input)
+      outputs: ["step1_result"],
+      modelTier: "medium",
+    },
+    // parallel steps: set runParallel: true on each
+    // conditional branching: use condition field
+    // human checkpoints: set requiresApproval: true
+  ],
+}
+```
+
+3. Register it in `packages/workflows/src/built-in/index.ts`
+
+---
+
+## Adding a Context Pack
+
+Context packs live in `packages/brain/src/packs/`. A pack is a curated slice of context loaded at session start for a specific task type.
+
+1. Create `packages/brain/src/packs/<pack-id>.ts`
+2. Export a `ContextPack`:
+
+```typescript
+export const authPack: ContextPack = {
+  id: "auth",
+  name: "Authentication",
+  description: "Auth patterns, session handling, token flows.",
+  fileGlobs: ["**/auth/**", "**/middleware/auth*", "**/session*"],
+  systemPromptAddition: `
+    Focus on the project's authentication conventions.
+    Note any deviations from standard patterns.
+  `,
+}
+```
+
+3. Register it in `packages/brain/src/packs/index.ts`
+
+Packs are selected at session creation via `packId`. The brain loader uses the pack's `fileGlobs` to prioritize which chunks are loaded into context.
+
+---
+
+## Adding a Spec Generator
+
+Spec generators live in `packages/spec/src/generators/`. DevOS ships generators for PRDs, architecture docs, and technical specs.
+
+1. Create `packages/spec/src/generators/<type>.ts`
+2. Implement the `SpecGenerator` interface (type in `@devos/core`):
+
+```typescript
+export const mySpecGenerator: SpecGenerator = {
+  type: "my-spec-type",
+  name: "My Spec Type",
+  promptTemplate: `
+    Given the following project context:
+    {{projectContext}}
+
+    Generate a <your spec type> that covers:
+    - ...
+  `,
+  outputSchema: z.object({ ... }),   // Zod schema for structured output
+  requiresApproval: true,            // gate downstream tasks on approval
+}
+```
+
+3. Register it in `packages/spec/src/generators/index.ts`
+
+Approved specs are stored and referenced by the epic decomposer when creating tickets.
 
 ---
 

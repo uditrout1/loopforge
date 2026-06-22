@@ -253,6 +253,99 @@ export interface HumanCheckpoint {
   input?: string
 }
 
+// ─── Context Packs ───────────────────────────────────────────────────────────
+
+export interface ContextPack {
+  id: string
+  projectId: string
+  name: string
+  description: string
+  filePatterns: string[]         // glob patterns — e.g. ["**/auth/**", "**/middleware/**"]
+  ticketLabels: string[]         // ticket types to pull in — e.g. ["security", "bug"]
+  workflowIds: string[]          // related workflow ids to include
+  isBuiltIn: boolean
+  createdAt: Date
+}
+
+// ─── Specs (PRD / Architecture / Technical) ──────────────────────────────────
+
+export type SpecType = "prd" | "architecture" | "technical_spec"
+export type SpecStatus = "draft" | "in_review" | "approved" | "rejected"
+
+export interface Spec {
+  id: string
+  projectId: string
+  type: SpecType
+  title: string
+  content: string                // Markdown body
+  status: SpecStatus
+  version: number
+  linkedTicketIds: string[]
+  linkedAdrIds: string[]
+  approvedBy?: string
+  approvedAt?: Date
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── ADRs ────────────────────────────────────────────────────────────────────
+
+export type ADRStatus = "proposed" | "accepted" | "deprecated" | "superseded"
+
+export interface ADR {
+  id: string
+  projectId: string
+  number: number                 // sequential per project
+  title: string
+  context: string                // Why was this decision needed?
+  decision: string               // What was decided?
+  consequences: string           // What are the trade-offs?
+  status: ADRStatus
+  linkedTicketIds: string[]
+  linkedSpecIds: string[]
+  supersededBy?: string          // ADR id that supersedes this one
+  createdAt: Date
+  updatedAt: Date
+}
+
+// ─── Capability Gaps ─────────────────────────────────────────────────────────
+
+export type GapSeverity = "low" | "medium" | "high" | "critical"
+
+export interface CapabilityGap {
+  id: string
+  projectId: string
+  sessionId?: string
+  domain: string                 // e.g. "accessibility", "security", "performance"
+  severity: GapSeverity
+  description: string
+  suggestedSkillId?: string
+  exampleRisk: string
+  dismissed: boolean
+  detectedAt: Date
+}
+
+// ─── Visual Context ───────────────────────────────────────────────────────────
+
+export type VisualAssetType = "screenshot" | "figma_component" | "wireframe" | "design_system"
+
+export interface VisualAsset {
+  id: string
+  projectId: string
+  type: VisualAssetType
+  name: string
+  url?: string                   // Figma link or external URL
+  storagePath?: string           // local/cloud storage path for uploads
+  figmaNodeId?: string           // Figma node reference
+  linkedFilePaths: string[]      // codebase files that implement this visual
+  linkedTicketIds: string[]
+  aiDescription?: string         // AI-generated description of what the visual contains
+  analysisCache?: string         // cached analysis output
+  createdAt: Date
+  updatedAt: Date
+}
+
 // ─── Audit ───────────────────────────────────────────────────────────────────
 
 export interface AuditEntry {

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { Ticket, TicketType } from "@devos/core"
+import type { Ticket, TicketType, TicketStatus } from "@devos/core"
 import type { TicketStore } from "./store.js"
 import { classifyTicket } from "./classifier.js"
 import { scorePriority } from "./prioritizer.js"
@@ -35,7 +35,15 @@ function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
 // ─── BacklogService ───────────────────────────────────────────────────────────
 
 export class BacklogService {
-  constructor(private readonly store: TicketStore) {}
+  readonly store: TicketStore
+
+  constructor(store: TicketStore) {
+    this.store = store
+  }
+
+  async updateTicketStatus(id: string, status: TicketStatus): Promise<void> {
+    await this.store.updateTicketStatus(id, status)
+  }
 
   // Ingest a GitHub issue event
   async ingestGitHubIssue(
@@ -111,7 +119,7 @@ export class BacklogService {
       id: randomUUID(),
       projectId,
       title,
-      description: description || undefined,
+      ...(description ? { description } : {}),
       type,
       status: "open",
       priorityScore: 0,

@@ -4,9 +4,15 @@ import { logger } from "hono/logger"
 import { serve } from "@hono/node-server"
 import { createSessionsRouter } from "./routes/sessions.js"
 import { createProjectsRouter } from "./routes/projects.js"
+import { createDecomposeRouter } from "./routes/decompose.js"
+import { createBacklogRouter, BacklogService, createInMemoryTicketStore } from "@devos/backlog"
+import { listWorkflows, createRun, getRun, resumeRun, startRun } from "@devos/workflows"
+import { createSpecRouter, createInMemorySpecStore } from "@devos/spec"
+import { createADRRouter, ADRService, createInMemoryADRStore } from "@devos/adr"
 import type { Context, Next } from "hono"
+import { BUILT_IN_PACKS } from "@devos/brain"
 import type { BrainStore } from "@devos/brain"
-import type { Project, Ticket, ContextChunk } from "@devos/core"
+import type { Project, Ticket, ContextChunk, ContextPack } from "@devos/core"
 
 const PORT = Number(process.env["PORT"] ?? 18790)
 
@@ -54,6 +60,7 @@ const ALLOWED_ORIGINS = process.env["CORS_ORIGINS"]?.split(",").map((o) => o.tri
 function createInMemoryBrainStore(projectsMap: Map<string, Project>): BrainStore {
   const summaries = new Map<string, string>()
   const chunks = new Map<string, ContextChunk[]>()
+  const packsStore = new Map<string, ContextPack[]>()
 
   return {
     async getProject(id) { return projectsMap.get(id) ?? null },
@@ -64,6 +71,22 @@ function createInMemoryBrainStore(projectsMap: Map<string, Project>): BrainStore
     },
     async saveSessionSummary(projectId, summary) {
       summaries.set(projectId, summary)
+    },
+    async getPacks(projectId) {
+      // Custom packs are stored per-project; built-ins are always included
+      const custom = packsStore.get(projectId) ?? []
+      return [...BUILT_IN_PACKS, ...custom]
+    },
+    async savePack(pack) {
+      const existing = packsStore.get(pack.projectId) ?? []
+      packsStore.set(pack.projectId, [...existing, pack])
+    },
+    async deletePack(projectId, packId) {
+      const existing = packsStore.get(projectId) ?? []
+      const next = existing.filter((p) => p.id !== packId)
+      if (next.length === existing.length) return false
+      packsStore.set(projectId, next)
+      return true
     },
   }
 }
@@ -86,8 +109,12 @@ function main() {
   app.use("/projects/*", requireApiKey)
   app.use("/sessions/*", requireApiKey)
 
-  const { router: projectsRouter, projectsStore } = createProjectsRouter()
+  // First pass: get the projectsStore map reference (no store yet)
+  const { projectsStore } = createProjectsRouter()
+  // Create the brain store wrapping the projects map
   const store = createInMemoryBrainStore(projectsStore)
+  // Second pass: create the router with the store wired in for pack routes
+  const { router: projectsRouter } = createProjectsRouter(store)
 
   const openRouterKey = process.env["OPENROUTER_API_KEY"]
   const routerConfig = {
@@ -96,8 +123,52 @@ function main() {
     forceOnPremForClassifications: ["confidential", "restricted"],
   }
 
+  // ADR store and service (created early so sessions router can reference it)
+  const adrStore = createInMemoryADRStore()
+  const adrService = new ADRService(adrStore, routerConfig)
+
   app.route("/projects", projectsRouter)
-  app.route("/sessions", createSessionsRouter(store, routerConfig))
+  app.route("/sessions", createSessionsRouter(store, routerConfig, adrService))
+
+  // Backlog routes
+  app.use("/backlog/*", requireApiKey)
+  const backlogService = new BacklogService(createInMemoryTicketStore())
+  const webhookSecret = process.env["GITHUB_WEBHOOK_SECRET"]
+  app.route("/backlog", createBacklogRouter(backlogService, webhookSecret))
+
+  // Decompose routes
+  app.use("/decompose/*", requireApiKey)
+  app.route("/decompose", createDecomposeRouter(store, backlogService, routerConfig))
+
+  // Spec routes
+  app.use("/specs/*", requireApiKey)
+  app.route("/specs", createSpecRouter(createInMemorySpecStore(), routerConfig))
+
+  // ADR routes
+  app.use("/adrs/*", requireApiKey)
+  app.route("/adrs", createADRRouter(adrService))
+
+  // Workflow routes
+  app.use("/workflows/*", requireApiKey)
+  app.get("/workflows", (c) => c.json({ workflows: listWorkflows() }))
+  app.post("/workflows/:id/runs", async (c) => {
+    const workflowId = c.req.param("id")
+    const body = await c.req.json<{ projectId: string; triggeredBy?: string; payload?: Record<string, unknown> }>()
+    const run = createRun(workflowId, body.projectId, body.triggeredBy ?? "api", body.payload ?? {})
+    void startRun(run.id, routerConfig)
+    return c.json({ run }, 201)
+  })
+  app.get("/workflows/runs/:runId", (c) => {
+    const run = getRun(c.req.param("runId"))
+    if (!run) return c.json({ error: "Run not found" }, 404)
+    return c.json({ run })
+  })
+  app.post("/workflows/runs/:runId/resume", async (c) => {
+    const body = await c.req.json<{ nodeId: string; decision: string; input?: string }>()
+    await resumeRun(c.req.param("runId"), body.nodeId, body.decision, body.input)
+    const run = getRun(c.req.param("runId"))
+    return c.json({ run })
+  })
 
   serve({ fetch: app.fetch, port: PORT, hostname: HOST }, () => {
     console.log(`DevOS Gateway listening on ${HOST}:${PORT}`)

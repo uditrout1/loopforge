@@ -33,12 +33,19 @@ type PatchBody = {
   title?: string
 }
 
+function getParam(c: Context, name: string): string | null {
+  const val = c.req.param(name)
+  return val ?? null
+}
+
 export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): Hono {
   const app = new Hono()
 
   // GET /specs/:projectId — list specs
   app.get("/:projectId", async (c: Context) => {
-    const projectId = c.req.param("projectId")
+    const projectId = getParam(c, "projectId")
+    if (!projectId) return c.json({ error: "Missing projectId" }, 400)
+
     const typeParam = c.req.query("type")
 
     let type: SpecType | undefined
@@ -54,7 +61,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
 
   // GET /specs/:projectId/:id — get spec
   app.get("/:projectId/:id", async (c: Context) => {
-    const id = c.req.param("id")
+    const id = getParam(c, "id")
+    if (!id) return c.json({ error: "Missing id" }, 400)
+
     const spec = await store.getSpec(id)
     if (!spec) return c.json({ error: "Spec not found" }, 404)
     return c.json({ spec })
@@ -62,7 +71,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
 
   // POST /specs/:projectId/generate — generate a draft spec
   app.post("/:projectId/generate", async (c: Context) => {
-    const projectId = c.req.param("projectId")
+    const projectId = getParam(c, "projectId")
+    if (!projectId) return c.json({ error: "Missing projectId" }, 400)
+
     const body = await c.req.json() as GenerateBody
 
     let content: string
@@ -127,7 +138,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
 
   // PATCH /specs/:projectId/:id — manual update
   app.patch("/:projectId/:id", async (c: Context) => {
-    const id = c.req.param("id")
+    const id = getParam(c, "id")
+    if (!id) return c.json({ error: "Missing id" }, 400)
+
     const spec = await store.getSpec(id)
     if (!spec) return c.json({ error: "Spec not found" }, 404)
 
@@ -150,7 +163,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
 
   // POST /specs/:projectId/:id/submit — submit for review
   app.post("/:projectId/:id/submit", async (c: Context) => {
-    const id = c.req.param("id")
+    const id = getParam(c, "id")
+    if (!id) return c.json({ error: "Missing id" }, 400)
+
     const spec = await store.getSpec(id)
     if (!spec) return c.json({ error: "Spec not found" }, 404)
 
@@ -161,7 +176,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
 
   // POST /specs/:projectId/:id/approve — approve
   app.post("/:projectId/:id/approve", async (c: Context) => {
-    const id = c.req.param("id")
+    const id = getParam(c, "id")
+    if (!id) return c.json({ error: "Missing id" }, 400)
+
     const spec = await store.getSpec(id)
     if (!spec) return c.json({ error: "Spec not found" }, 404)
 
@@ -184,7 +201,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
 
   // POST /specs/:projectId/:id/reject — reject
   app.post("/:projectId/:id/reject", async (c: Context) => {
-    const id = c.req.param("id")
+    const id = getParam(c, "id")
+    if (!id) return c.json({ error: "Missing id" }, 400)
+
     const spec = await store.getSpec(id)
     if (!spec) return c.json({ error: "Spec not found" }, 404)
 
