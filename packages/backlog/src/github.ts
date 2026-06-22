@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
-import type { Ticket, TicketSource } from "@devos/core"
+import type { Ticket, TicketSource } from "@loopforge/core"
 import { classifyTicket } from "./classifier.js"
 import { scorePriority } from "./prioritizer.js"
 

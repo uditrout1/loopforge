@@ -1,6 +1,6 @@
 import { readdir, readFile, lstat } from "node:fs/promises"
 import { join, extname, relative, resolve } from "node:path"
-import type { TechStack, ProjectKnowledge } from "@devos/core"
+import type { TechStack, ProjectKnowledge } from "@loopforge/core"
 import { chunkFile } from "./chunker.js"
 
 const INDEXABLE_EXTENSIONS = new Set([

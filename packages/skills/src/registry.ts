@@ -1,4 +1,4 @@
-import type { Skill } from "@devos/core"
+import type { Skill } from "@loopforge/core"
 import { BUILT_IN_SKILLS } from "./built-in.js"
 
 // In-memory registry — replace with Supabase + pgvector for production similarity search

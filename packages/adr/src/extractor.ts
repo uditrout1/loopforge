@@ -1,6 +1,6 @@
-import { route } from "@devos/router"
-import type { RouterConfig } from "@devos/router"
-import type { Message } from "@devos/core"
+import { route } from "@loopforge/router"
+import type { RouterConfig } from "@loopforge/router"
+import type { Message } from "@loopforge/core"
 
 export interface ExtractedDecision {
   title: string

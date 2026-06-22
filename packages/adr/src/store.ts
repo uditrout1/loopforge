@@ -1,4 +1,4 @@
-import type { ADR, ADRStatus } from "@devos/core"
+import type { ADR, ADRStatus } from "@loopforge/core"
 
 // ─── ADRStore interface ───────────────────────────────────────────────────────
 

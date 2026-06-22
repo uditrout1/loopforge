@@ -1,4 +1,4 @@
-import type { VisualAsset } from "@devos/core"
+import type { VisualAsset } from "@loopforge/core"
 
 export interface VisualAssetStore {
   getAsset(id: string): Promise<VisualAsset | null>

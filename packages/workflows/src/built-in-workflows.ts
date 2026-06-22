@@ -1,4 +1,4 @@
-import type { Workflow, WorkflowNode, RetryStrategy } from "@devos/core"
+import type { Workflow, WorkflowNode, RetryStrategy } from "@loopforge/core"
 
 // ─── Shared Defaults ─────────────────────────────────────────────────────────
 

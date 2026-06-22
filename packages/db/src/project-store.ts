@@ -1,4 +1,4 @@
-import type { Project } from "@devos/core"
+import type { Project } from "@loopforge/core"
 import type { SupabaseClient } from "./client.js"
 
 export interface ProjectStore {

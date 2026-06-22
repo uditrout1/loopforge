@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
-import type { Project, ContextChunk, Ticket, TicketType, TicketStatus, ContextPack } from "@devos/core"
-import type { BrainStore } from "@devos/brain"
+import type { Project, ContextChunk, Ticket, TicketType, TicketStatus, ContextPack } from "@loopforge/core"
+import type { BrainStore } from "@loopforge/brain"
 import type { SupabaseClient } from "./client.js"
 
 // ─── Row types returned from Supabase ────────────────────────────────────────

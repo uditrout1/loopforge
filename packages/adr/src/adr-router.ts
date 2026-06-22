@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import type { ADRService } from "./adr-service.js"
-import type { ADR, ADRStatus } from "@devos/core"
+import type { ADR, ADRStatus } from "@loopforge/core"
 
 export function createADRRouter(adrService: ADRService): Hono {
   const app = new Hono()

@@ -1,4 +1,4 @@
-import type { Workflow } from "@devos/core"
+import type { Workflow } from "@loopforge/core"
 import { BUILT_IN_WORKFLOWS } from "./built-in-workflows.js"
 
 // ─── Registry ─────────────────────────────────────────────────────────────────

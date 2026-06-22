@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import type { ContextChunk } from "@devos/core"
+import type { ContextChunk } from "@loopforge/core"
 
 const CHUNK_SIZE_TOKENS = 512
 const CHUNK_OVERLAP_TOKENS = 64

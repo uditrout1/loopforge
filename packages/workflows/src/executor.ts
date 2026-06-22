@@ -5,9 +5,9 @@ import type {
   WorkflowEdge,
   NodeResult,
   HumanCheckpoint,
-} from "@devos/core"
-import { route } from "@devos/router"
-import type { RouterConfig } from "@devos/router"
+} from "@loopforge/core"
+import { route } from "@loopforge/router"
+import type { RouterConfig } from "@loopforge/router"
 
 // ─── Topological Sort ────────────────────────────────────────────────────────
 

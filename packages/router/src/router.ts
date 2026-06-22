@@ -1,4 +1,4 @@
-import type { ModelRequest, ModelResponse } from "@devos/core"
+import type { ModelRequest, ModelResponse } from "@loopforge/core"
 import { classifyComplexity } from "./classifier.js"
 import { callOpenRouter } from "./providers/openrouter.js"
 import { callOllama, isOllamaAvailable } from "./providers/ollama.js"

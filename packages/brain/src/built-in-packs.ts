@@ -1,4 +1,4 @@
-import type { ContextPack } from "@devos/core"
+import type { ContextPack } from "@loopforge/core"
 
 export const BUILT_IN_PACKS: ContextPack[] = [
   {

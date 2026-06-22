@@ -1,4 +1,4 @@
-import type { Ticket, TicketStatus } from "@devos/core"
+import type { Ticket, TicketStatus } from "@loopforge/core"
 
 // ─── TicketStore interface ────────────────────────────────────────────────────
 

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto"
 import { extractDecisions } from "./extractor.js"
 import type { ADRStore } from "./store.js"
-import type { RouterConfig } from "@devos/router"
-import type { ADR, ADRStatus, Message } from "@devos/core"
+import type { RouterConfig } from "@loopforge/router"
+import type { ADR, ADRStatus, Message } from "@loopforge/core"
 
 export class ADRService {
   constructor(

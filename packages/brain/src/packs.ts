@@ -1,4 +1,4 @@
-import type { ContextPack, ContextChunk } from "@devos/core"
+import type { ContextPack, ContextChunk } from "@loopforge/core"
 import type { BrainStore } from "./loader.js"
 
 /**

@@ -1,4 +1,4 @@
-import type { Spec } from "@devos/core"
+import type { Spec } from "@loopforge/core"
 
 // Extract ticket references from spec content: looks for "TICKET-{id}" or "#ticket-{id}" patterns
 export function extractTicketRefs(content: string): string[] {

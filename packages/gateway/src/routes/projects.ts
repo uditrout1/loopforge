@@ -1,9 +1,9 @@
 import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
 import { resolve, sep } from "node:path"
-import { indexRepository } from "@devos/brain"
-import type { BrainStore } from "@devos/brain"
-import type { Project } from "@devos/core"
+import { indexRepository } from "@loopforge/brain"
+import type { BrainStore } from "@loopforge/brain"
+import type { Project } from "@loopforge/core"
 
 // Fix 1: path traversal — only allow repos under configured roots.
 // Set ALLOWED_REPO_ROOTS as colon-separated list; defaults to $HOME.

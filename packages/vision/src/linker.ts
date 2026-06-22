@@ -1,4 +1,4 @@
-import type { BrainStore } from "@devos/brain"
+import type { BrainStore } from "@loopforge/brain"
 
 export async function linkToCode(
   projectId: string,

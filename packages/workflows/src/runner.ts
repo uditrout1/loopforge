@@ -1,5 +1,5 @@
-import type { WorkflowRun } from "@devos/core"
-import type { RouterConfig } from "@devos/router"
+import type { WorkflowRun } from "@loopforge/core"
+import type { RouterConfig } from "@loopforge/router"
 import { randomUUID } from "node:crypto"
 import { executeWorkflow, checkpointResolvers } from "./executor.js"
 import { getWorkflow } from "./registry.js"

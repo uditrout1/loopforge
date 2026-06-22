@@ -1,4 +1,4 @@
-import type { Ticket } from "@devos/core"
+import type { Ticket } from "@loopforge/core"
 
 // ─── Scoring constants ────────────────────────────────────────────────────────
 

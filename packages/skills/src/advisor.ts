@@ -1,4 +1,4 @@
-import type { CapabilityGap, GapSeverity, Message } from "@devos/core"
+import type { CapabilityGap, GapSeverity, Message } from "@loopforge/core"
 import { randomUUID } from "node:crypto"
 
 interface DomainRule {

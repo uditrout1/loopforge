@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises"
-import { route } from "@devos/router"
-import type { RouterConfig } from "@devos/router"
-import type { VisualAsset, ImagePart, TextPart } from "@devos/core"
+import { route } from "@loopforge/router"
+import type { RouterConfig } from "@loopforge/router"
+import type { VisualAsset, ImagePart, TextPart } from "@loopforge/core"
 
 export interface AnalysisResult {
   description: string

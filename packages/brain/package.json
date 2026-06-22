@@ -1,5 +1,5 @@
 {
-  "name": "@devos/brain",
+  "name": "@loopforge/brain",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@devos/core": "workspace:*",
+    "@loopforge/core": "workspace:*",
     "ignore": "^5.3.0",
     "tiktoken": "^1.0.15"
   },

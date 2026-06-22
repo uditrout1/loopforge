@@ -5,15 +5,15 @@ import { serve } from "@hono/node-server"
 import { createSessionsRouter } from "./routes/sessions.js"
 import { createProjectsRouter } from "./routes/projects.js"
 import { createDecomposeRouter } from "./routes/decompose.js"
-import { createBacklogRouter, BacklogService, createInMemoryTicketStore } from "@devos/backlog"
-import { listWorkflows, createRun, getRun, resumeRun, startRun } from "@devos/workflows"
-import { createSpecRouter, createInMemorySpecStore } from "@devos/spec"
-import { createADRRouter, ADRService, createInMemoryADRStore } from "@devos/adr"
-import { createVisionRouter, VisionService, createInMemoryVisualAssetStore } from "@devos/vision"
+import { createBacklogRouter, BacklogService, createInMemoryTicketStore } from "@loopforge/backlog"
+import { listWorkflows, createRun, getRun, resumeRun, startRun } from "@loopforge/workflows"
+import { createSpecRouter, createInMemorySpecStore } from "@loopforge/spec"
+import { createADRRouter, ADRService, createInMemoryADRStore } from "@loopforge/adr"
+import { createVisionRouter, VisionService, createInMemoryVisualAssetStore } from "@loopforge/vision"
 import type { Context, Next } from "hono"
-import { BUILT_IN_PACKS } from "@devos/brain"
-import type { BrainStore } from "@devos/brain"
-import type { Project, Ticket, ContextChunk, ContextPack } from "@devos/core"
+import { BUILT_IN_PACKS } from "@loopforge/brain"
+import type { BrainStore } from "@loopforge/brain"
+import type { Project, Ticket, ContextChunk, ContextPack } from "@loopforge/core"
 
 const PORT = Number(process.env["PORT"] ?? 18790)
 
@@ -30,7 +30,7 @@ async function requireApiKey(c: Context, next: Next): Promise<Response | void> {
     const forwarded = c.req.header("x-forwarded-for")
     if (forwarded) {
       return c.json(
-        { error: "Set DEVOS_API_KEY before exposing DevOS beyond localhost." },
+        { error: "Set DEVOS_API_KEY before exposing LoopForge beyond localhost." },
         401,
       )
     }
@@ -177,7 +177,7 @@ function main() {
   })
 
   serve({ fetch: app.fetch, port: PORT, hostname: HOST }, () => {
-    console.log(`DevOS Gateway listening on ${HOST}:${PORT}`)
+    console.log(`LoopForge Gateway listening on ${HOST}:${PORT}`)
     console.log(`  Auth: ${DEVOS_API_KEY ? "API key required" : "localhost-only (set DEVOS_API_KEY for remote access)"}`)
     console.log(`  OpenRouter: ${openRouterKey ? "configured" : "not set"}`)
     console.log(`  Ollama: ${routerConfig.ollamaBaseUrl}`)

@@ -1,12 +1,12 @@
 import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
-import { loadSessionContext, formatContextAsSystemPrompt, formatContextAsUserMessage, assemblePackContext } from "@devos/brain"
-import { route } from "@devos/router"
-import { recommendSkills, detectCapabilityGaps } from "@devos/skills"
-import type { BrainStore } from "@devos/brain"
-import type { RouterConfig } from "@devos/router"
-import type { Message } from "@devos/core"
-import type { ADRService } from "@devos/adr"
+import { loadSessionContext, formatContextAsSystemPrompt, formatContextAsUserMessage, assemblePackContext } from "@loopforge/brain"
+import { route } from "@loopforge/router"
+import { recommendSkills, detectCapabilityGaps } from "@loopforge/skills"
+import type { BrainStore } from "@loopforge/brain"
+import type { RouterConfig } from "@loopforge/router"
+import type { Message } from "@loopforge/core"
+import type { ADRService } from "@loopforge/adr"
 
 interface SessionState {
   projectId: string
@@ -82,8 +82,8 @@ export function createSessionsRouter(
     if (!session) return c.json({ error: "Session not found" }, 404)
 
     const { content } = await c.req.json<{ content: string | unknown[] }>()
-    const messageContent: import("@devos/core").MessageContent =
-      typeof content === "string" ? content : (content as import("@devos/core").MessageContent)
+    const messageContent: import("@loopforge/core").MessageContent =
+      typeof content === "string" ? content : (content as import("@loopforge/core").MessageContent)
     session.messages.push({ role: "user", content: messageContent })
 
     const project = await store.getProject(session.projectId)

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import type { Ticket, TicketType, TicketStatus } from "@devos/core"
+import type { Ticket, TicketType, TicketStatus } from "@loopforge/core"
 import type { TicketStore } from "./store.js"
 import { classifyTicket } from "./classifier.js"
 import { scorePriority } from "./prioritizer.js"

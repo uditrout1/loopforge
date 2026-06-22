@@ -1,4 +1,4 @@
-import type { Message, MessageContent, TextPart, ModelCapability } from "@devos/core"
+import type { Message, MessageContent, TextPart, ModelCapability } from "@loopforge/core"
 
 // Heuristic complexity scoring — avoids a model call for routing decisions.
 // Score 1-2: extraction, classification, formatting → small model

@@ -1,4 +1,4 @@
-import type { TicketType } from "@devos/core"
+import type { TicketType } from "@loopforge/core"
 
 // ─── Keyword sets ─────────────────────────────────────────────────────────────
 

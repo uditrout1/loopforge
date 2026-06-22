@@ -1,4 +1,4 @@
-import type { SessionContext, Project, Ticket, ContextChunk, ContextPack, Message } from "@devos/core"
+import type { SessionContext, Project, Ticket, ContextChunk, ContextPack, Message } from "@loopforge/core"
 
 export interface BrainStore {
   getProject(projectId: string): Promise<Project | null>
@@ -52,7 +52,7 @@ export function formatContextAsSystemPrompt(ctx: SessionContext): string {
   ].join(", ")
 
   const parts = [
-    `You are DevOS, an AI assistant for software development.`,
+    `You are LoopForge, an AI assistant for software development.`,
     `Project: ${project.name}`,
     ...(stack ? [`Stack: ${stack}`] : []),
     ...(project.knowledge.designConstraints.length > 0

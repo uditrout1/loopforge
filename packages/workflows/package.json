@@ -1,5 +1,5 @@
 {
-  "name": "@devos/workflows",
+  "name": "@loopforge/workflows",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,8 +12,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@devos/core": "workspace:*",
-    "@devos/router": "workspace:*"
+    "@loopforge/core": "workspace:*",
+    "@loopforge/router": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "*",

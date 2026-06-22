@@ -1,5 +1,5 @@
 {
-  "name": "@devos/db",
+  "name": "@loopforge/db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,8 +12,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@devos/core": "workspace:*",
-    "@devos/brain": "workspace:*",
+    "@loopforge/core": "workspace:*",
+    "@loopforge/brain": "workspace:*",
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {

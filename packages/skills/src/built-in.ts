@@ -1,4 +1,4 @@
-import type { Skill } from "@devos/core"
+import type { Skill } from "@loopforge/core"
 
 export const BUILT_IN_SKILLS: Skill[] = [
   {

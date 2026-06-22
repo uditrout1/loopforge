@@ -1,8 +1,8 @@
 import { Hono } from "hono"
-import { decomposeEpic, tasksToTickets } from "@devos/workflows"
-import type { BrainStore } from "@devos/brain"
-import type { BacklogService } from "@devos/backlog"
-import type { RouterConfig } from "@devos/router"
+import { decomposeEpic, tasksToTickets } from "@loopforge/workflows"
+import type { BrainStore } from "@loopforge/brain"
+import type { BacklogService } from "@loopforge/backlog"
+import type { RouterConfig } from "@loopforge/router"
 
 export function createDecomposeRouter(
   brainStore: BrainStore,

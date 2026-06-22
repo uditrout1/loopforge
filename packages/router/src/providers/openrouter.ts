@@ -1,4 +1,4 @@
-import type { Message, MessageContent, ModelCapability, ModelResponse, ProviderType } from "@devos/core"
+import type { Message, MessageContent, ModelCapability, ModelResponse, ProviderType } from "@loopforge/core"
 
 // Model tiers on OpenRouter — cheapest capable model per tier
 const TIER_MODELS: Record<ModelCapability, string> = {
@@ -55,7 +55,7 @@ export async function callOpenRouter(
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "https://devos.app",
-      "X-Title": "DevOS",
+      "X-Title": "LoopForge",
     },
     body: JSON.stringify({
       model,

@@ -1,4 +1,4 @@
-import type { ContextChunk } from "@devos/core"
+import type { ContextChunk } from "@loopforge/core"
 import type { SupabaseClient } from "./client.js"
 
 export interface ChunkStore {

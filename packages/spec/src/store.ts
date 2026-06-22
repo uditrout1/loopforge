@@ -1,4 +1,4 @@
-import type { Spec, SpecType } from "@devos/core"
+import type { Spec, SpecType } from "@loopforge/core"
 
 export interface SpecStore {
   getSpec(id: string): Promise<Spec | null>

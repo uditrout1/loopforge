@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
-import { route } from "@devos/router"
-import type { RouterConfig } from "@devos/router"
-import type { Ticket, TicketType } from "@devos/core"
+import { route } from "@loopforge/router"
+import type { RouterConfig } from "@loopforge/router"
+import type { Ticket, TicketType } from "@loopforge/core"
 
 export interface DecompositionInput {
   projectId: string

@@ -51,10 +51,10 @@ importers:
 
   packages/adr:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
-      '@devos/router':
+      '@loopforge/router':
         specifier: workspace:*
         version: link:../router
       hono:
@@ -70,7 +70,7 @@ importers:
 
   packages/backlog:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
       hono:
@@ -86,7 +86,7 @@ importers:
 
   packages/brain:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
       ignore:
@@ -111,10 +111,10 @@ importers:
 
   packages/db:
     dependencies:
-      '@devos/brain':
+      '@loopforge/brain':
         specifier: workspace:*
         version: link:../brain
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
       '@supabase/supabase-js':
@@ -130,36 +130,36 @@ importers:
 
   packages/gateway:
     dependencies:
-      '@devos/adr':
-        specifier: workspace:*
-        version: link:../adr
-      '@devos/backlog':
-        specifier: workspace:*
-        version: link:../backlog
-      '@devos/brain':
-        specifier: workspace:*
-        version: link:../brain
-      '@devos/core':
-        specifier: workspace:*
-        version: link:../core
-      '@devos/router':
-        specifier: workspace:*
-        version: link:../router
-      '@devos/skills':
-        specifier: workspace:*
-        version: link:../skills
-      '@devos/spec':
-        specifier: workspace:*
-        version: link:../spec
-      '@devos/vision':
-        specifier: workspace:*
-        version: link:../vision
-      '@devos/workflows':
-        specifier: workspace:*
-        version: link:../workflows
       '@hono/node-server':
         specifier: ^1.12.0
         version: 1.19.14(hono@4.12.26)
+      '@loopforge/adr':
+        specifier: workspace:*
+        version: link:../adr
+      '@loopforge/backlog':
+        specifier: workspace:*
+        version: link:../backlog
+      '@loopforge/brain':
+        specifier: workspace:*
+        version: link:../brain
+      '@loopforge/core':
+        specifier: workspace:*
+        version: link:../core
+      '@loopforge/router':
+        specifier: workspace:*
+        version: link:../router
+      '@loopforge/skills':
+        specifier: workspace:*
+        version: link:../skills
+      '@loopforge/spec':
+        specifier: workspace:*
+        version: link:../spec
+      '@loopforge/vision':
+        specifier: workspace:*
+        version: link:../vision
+      '@loopforge/workflows':
+        specifier: workspace:*
+        version: link:../workflows
       hono:
         specifier: ^4.4.0
         version: 4.12.26
@@ -173,7 +173,7 @@ importers:
 
   packages/router:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -183,7 +183,7 @@ importers:
 
   packages/skills:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -193,10 +193,10 @@ importers:
 
   packages/spec:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
-      '@devos/router':
+      '@loopforge/router':
         specifier: workspace:*
         version: link:../router
       hono:
@@ -212,13 +212,13 @@ importers:
 
   packages/vision:
     dependencies:
-      '@devos/brain':
+      '@loopforge/brain':
         specifier: workspace:*
         version: link:../brain
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
-      '@devos/router':
+      '@loopforge/router':
         specifier: workspace:*
         version: link:../router
       hono:
@@ -234,10 +234,10 @@ importers:
 
   packages/workflows:
     dependencies:
-      '@devos/core':
+      '@loopforge/core':
         specifier: workspace:*
         version: link:../core
-      '@devos/router':
+      '@loopforge/router':
         specifier: workspace:*
         version: link:../router
     devDependencies:

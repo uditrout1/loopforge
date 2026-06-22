@@ -1,4 +1,4 @@
-import type { Message, MessageContent, TextPart, ModelCapability, ModelResponse, ProviderType } from "@devos/core"
+import type { Message, MessageContent, TextPart, ModelCapability, ModelResponse, ProviderType } from "@loopforge/core"
 
 const TIER_MODELS: Record<ModelCapability, string> = {
   small: "qwen2.5:7b",

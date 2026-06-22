@@ -1,5 +1,5 @@
-import { route } from "@devos/router"
-import type { RouterConfig } from "@devos/router"
+import { route } from "@loopforge/router"
+import type { RouterConfig } from "@loopforge/router"
 
 // Generate a PRD from a feature description
 export async function generatePRD(

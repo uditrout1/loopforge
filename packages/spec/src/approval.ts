@@ -1,4 +1,4 @@
-import type { Spec } from "@devos/core"
+import type { Spec } from "@loopforge/core"
 
 // Check if a spec can be approved (must be in 'in_review' status)
 export function canApprove(spec: Spec): boolean {

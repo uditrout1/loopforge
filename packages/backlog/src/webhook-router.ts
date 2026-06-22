@@ -1,5 +1,5 @@
 import { Hono } from "hono"
-import type { TicketStatus, TicketType } from "@devos/core"
+import type { TicketStatus, TicketType } from "@loopforge/core"
 import type { BacklogService } from "./backlog-service.js"
 import { verifyGitHubWebhookSignature, type GitHubIssuePayload, type GitHubPrPayload } from "./github.js"
 
