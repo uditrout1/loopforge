@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto"
 import type { Ticket, TicketType, TicketStatus } from "@loopforge/core"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestTicket } from "@loopforge/graph"
 import type { TicketStore } from "./store.js"
 import { classifyTicket } from "./classifier.js"
 import { scorePriority } from "./prioritizer.js"
@@ -36,9 +38,11 @@ function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
 
 export class BacklogService {
   readonly store: TicketStore
+  private graphStore: GraphStore | undefined
 
-  constructor(store: TicketStore) {
+  constructor(store: TicketStore, graphStore?: GraphStore) {
     this.store = store
+    this.graphStore = graphStore
   }
 
   async updateTicketStatus(id: string, status: TicketStatus): Promise<void> {
@@ -53,6 +57,9 @@ export class BacklogService {
     const ticket = parseGitHubIssueEvent(payload, projectId)
     if (!ticket) return null
     await this.store.upsertTicket(ticket)
+    if (this.graphStore !== undefined) {
+      ingestTicket(ticket, this.graphStore).catch(() => {})
+    }
     return ticket
   }
 
@@ -136,6 +143,9 @@ export class BacklogService {
     const { score, reason } = scorePriority(draft)
     const ticket: Ticket = { ...draft, priorityScore: score, priorityReason: reason }
     await this.store.upsertTicket(ticket)
+    if (this.graphStore !== undefined) {
+      ingestTicket(ticket, this.graphStore).catch(() => {})
+    }
     return ticket
   }
 

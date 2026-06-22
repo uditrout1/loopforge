@@ -1,26 +1,28 @@
 # Product Requirements Document
-## DevOS — The AI Developer Operating System
-**Version:** 0.1 (Draft)
-**Date:** 2026-06-21
-**Status:** Internal Working Document
+## LoopForge — Product Engineering Intelligence
+**Version:** 0.2
+**Date:** 2026-06-22
+**Status:** Living Document
 
 ---
 
 ## 1. Product Vision
 
-> DevOS is the operating system for AI-assisted software development — a platform where complex tasks are executed by multi-agent workflows, context is permanent, stakeholder feedback flows automatically into the backlog, and the pipeline ships with confidence.
+> LoopForge is the brain for your project — a Product Engineering Intelligence platform that connects business intent, architecture decisions, implementation, and quality outcomes into a single, traversable knowledge graph.
 
-Developers should never explain their project twice. Teams should never lose track of what matters. Releases should never be a leap of faith.
+Developers should never explain their project twice. Teams should never lose track of why a decision was made. Every requirement should be traceable from the PRD that created it to the release that fulfilled it.
 
 ---
 
 ## 2. Design Principles
 
 1. **Context is permanent.** The system knows your project. You don't re-explain it.
-2. **Surface before asking.** Relevant capabilities, tickets, and risks appear before the developer needs to look for them.
-3. **Automate the forgettable.** Security audits, backlog updates, changelog generation — things developers forget or defer — happen automatically.
-4. **Humans decide; agents execute.** The system handles execution. Humans are called in only when a decision genuinely requires judgment.
-5. **Open where it helps, closed where it protects.** Workflows and skills are shareable; customer data is not.
+2. **Relationships over files.** Intelligence comes from connecting entities — not just indexing them. A file without lineage is trivia; a requirement connected to its ADR, code, and evaluation is knowledge.
+3. **Surface before asking.** Relevant capabilities, tickets, risks, and gaps appear before the developer looks for them.
+4. **Automate the forgettable.** Security audits, backlog updates, changelog generation, ADR capture — things developers defer — happen automatically.
+5. **Humans decide; agents execute.** The system handles execution. Humans are called in when a decision genuinely requires judgment.
+6. **Quality is defined, not assumed.** Evaluation criteria are derived from requirements and standards, not invented at review time.
+7. **Open where it helps, closed where it protects.** Workflows and skills are shareable; customer data is not.
 
 ---
 
@@ -30,262 +32,195 @@ Developers should never explain their project twice. Teams should never lose tra
 **Name:** Udit
 **Role:** Indie developer / founder building a consumer app
 **Stack:** React, SwiftUI, Supabase, multiple AI APIs
-**Pain:** Every Claude session restarts with no memory of the project. Has to re-explain stack, conventions, open issues. Spends 20% of AI session time on context restoration. Improvises multi-agent workflows manually. Security reviews happen ad-hoc or not at all.
-**Goal:** Ship faster. Never re-explain the project. Know what to work on next.
+**Pain:** Every AI session restarts with no memory of the project. Has to re-explain stack, conventions, open issues. Spends 20% of session time on context restoration. Security reviews happen ad-hoc. No way to trace which requirement led to which code.
+**Goal:** Ship faster. Never re-explain the project. Know exactly what to work on next and why.
 
 ### Persona 2: The Team Lead
 **Name:** Priya
 **Role:** Engineering lead, 12-person team, B2B SaaS startup
 **Stack:** Node.js, React, PostgreSQL, AWS
-**Pain:** Backlog drifts because nobody updates tickets after standup. Stakeholders message her directly asking "where is X?" PR reviews are inconsistent — whoever reviews first sets the bar. AI costs are invisible and climbing. Junior developers use GPT-4o for everything including renaming variables.
-**Goal:** Team operates autonomously. Stakeholders have visibility without interrupting the team. AI costs are under control.
+**Pain:** Backlog drifts. ADRs are forgotten. PR reviews are inconsistent. AI costs are invisible. No audit trail connecting business requirements to shipped code.
+**Goal:** Team operates autonomously. Stakeholders have visibility. Architecture decisions are preserved and enforced. AI costs are tracked.
 
 ### Persona 3: The Enterprise Architect
 **Name:** Ramesh
 **Role:** VP Engineering, 300-person engineering org, financial services
 **Stack:** Java microservices, React, Oracle, on-prem Kubernetes
-**Pain:** Cannot send code to OpenAI due to data residency requirements. Different teams use different AI tools with no governance. No audit trail of what prompts were sent to which models. Security reviews are manual and inconsistent. No way to enforce which models are approved for which data classifications.
-**Goal:** Governed AI development at scale. Full audit trail. On-prem deployment. Policy enforcement without blocking productivity.
+**Pain:** Cannot send code to OpenAI due to data residency requirements. No governance over AI usage. No compliance trail. Cannot answer "which requirement led to this service?"
+**Goal:** Governed AI development at scale. Full audit trail. On-prem deployment. Traceability from business requirement to production code.
 
 ### Persona 4: The Stakeholder
 **Name:** Ananya
-**Role:** Product Manager / Non-technical stakeholder
-**Pain:** Files feature requests in Slack and doesn't know if they were seen. Has to ask the dev team for status updates. Doesn't understand GitHub; can't read Jira without training.
-**Goal:** Know where her feedback went. Know what's shipping next week. No engineering interruptions.
+**Role:** Product Manager
+**Pain:** Files feature requests in Slack and doesn't know if they were seen. Can't trace her requirements through to implementation. Doesn't understand GitHub; can't read Jira.
+**Goal:** Know where her requirements went. Know what's shipping. See which of her requirements are validated and which are still open.
 
 ---
 
 ## 4. Core Capabilities
 
 ### Capability 1: Project Brain
-Persistent, structured knowledge about a project that loads automatically at session start and updates incrementally as the project evolves.
+Persistent, structured knowledge about a project that loads automatically at session start and updates incrementally.
 
-**What it contains:**
-- Tech stack and architecture
-- Coding conventions and patterns
-- Open tickets and priorities
-- Recent decisions and changes
-- Design system and constraints
-- Known issues and workarounds
+**Contents:** tech stack, architecture, coding conventions, open tickets, recent decisions, design constraints, known issues, visual assets, architecture decisions.
 
-**How it stays current:**
-- Initial build: repo scan on project connect
-- Incremental: file watcher detects changes, updates affected chunks
-- Session end: conversation summary appended to project knowledge
-
-**What it replaces:**
-- Manual context-setting at session start
-- Stale README files
-- Knowledge lost when developers leave
+**How it stays current:** initial repo scan → incremental file watching → session-end summary append → ADR extraction from decisions made in session.
 
 ---
 
-### Capability 2: Skill Discovery
-A searchable, embeddable registry of AI capabilities — from simple (summarize a file) to complex (run a full security audit) — that surfaces automatically based on what the developer is doing.
+### Capability 2: Product Engineering Knowledge Graph
+A traversable graph connecting every entity in the product engineering lifecycle — from PRD to release — preserving relationships, not just data.
 
-**How discovery works:**
-- Current task is embedded in real-time
-- Cosine similarity search against skill description embeddings
-- Top 3 relevant skills surfaced proactively
-- Full browser available for manual search
+**Entity types:** PRD, Requirement, AcceptanceCriteria, Spec, ADR, Architecture, File, Module, API, Ticket, PullRequest, Release, Evaluation, EvalRun, VisualAsset.
 
-**Skill types:**
-- Built-in (shipped with DevOS)
-- Team-private (published by team members)
-- Community (published to the marketplace)
+**Relationship types:** REQUIRES, DEFINES, GENERATES, IMPLEMENTS, REFERENCES, VALIDATES, APPROVES, SUPERSEDES, DEPENDS_ON, IMPACTS, CONTAINS, INCLUDED_IN, VALIDATED_BY, SCORES.
 
-**Skill anatomy:**
-- Name, description, trigger keywords
-- Prompt template
-- Required tools
-- Required model capabilities
-- Input/output schema
+**Queries it enables:**
+- "Why does this service exist?" → lineage to PRD
+- "Which requirement led to this code?" → upstream trace
+- "What breaks if Requirement 42 changes?" → downstream impact analysis
+- "Which ADR approved this architecture?" → APPROVES edge traversal
+- "Show all requirements validated by this release" → VALIDATED_BY + TAGGED_IN traversal
+
+**Ingestion:** automatic, non-blocking side effects from spec, ADR, backlog, vision, and brain writes. Manual edges via API.
 
 ---
 
-### Capability 3: Multi-Provider Model Router
-Intelligent routing of tasks to the appropriate model based on complexity, cost, data sensitivity, and team policy.
+### Capability 3: Spec-Driven Development
+A structured process where PRDs, architecture documents, and technical specs are generated, reviewed, and approved before downstream work begins.
 
-**Routing dimensions:**
-- **Complexity:** simple extraction/classification → cheap model; multi-step reasoning → frontier model
-- **Cost:** configurable budget per project/team; auto-downgrade when budget approached
-- **Data sensitivity:** sensitive code stays on-prem; general queries can go to cloud
-- **Team policy:** admin-configurable allowlist of approved models per data classification
+**Flow:** PRD generation → architecture doc → technical spec → approval → ADR extraction → eval generation → epic decomposition → tickets with file links.
 
-**Supported providers (V1):**
-- OpenRouter (cloud models: GPT-4o, Claude Sonnet, Gemini, Qwen, Llama, Deepseek, etc.)
-- Ollama (local/on-prem models)
-- Direct API (for enterprise contracts with specific providers)
-
-**Cost tracking:**
-- Per-request cost logged with project, session, and user attribution
-- Real-time spend dashboard per project and team
-- Budget alerts and hard caps
+**Approval gates:** specs must be approved before the epic decomposer creates tickets. Approved specs generate evaluation criteria automatically.
 
 ---
 
-### Capability 4: AI-Maintained Backlog
-A project backlog that stays current automatically — fed by stakeholder feedback from multiple channels, linked to code activity, and prioritized by AI based on impact and frequency.
+### Capability 4: Eval Engine
+A mechanism for converting organizational knowledge — requirements, standards, and human feedback — into machine-executable evaluation criteria.
 
-**Ticket lifecycle:**
-1. **Capture:** feedback ingested from connected channels (GitHub Issues first; Slack, email in V2)
-2. **Classify:** type (bug / feature / debt / security), urgency, affected component
-3. **Deduplicate:** similar tickets merged, source references preserved
-4. **Link:** connected to affected files in the project brain
-5. **Prioritize:** AI scores based on frequency, impact, blockers, stakeholder weight
-6. **Update:** status updated automatically when related code is committed or PR merged
-7. **Close:** auto-closed when code change resolves the ticket (with confidence score)
+**The shift:** Spec → Eval → Implementation → Validation → Approval, not Spec → Implementation → Hope.
 
-**Backlog health monitoring:**
-- Staleness alerts (tickets >30 days with no activity)
-- Conflict detection (contradictory requirements surfaced)
-- Orphan detection (tickets for deleted/refactored features)
+**Eval types:** engineering standards (coding conventions, security requirements, performance thresholds), product criteria (acceptance criteria, business rules), design standards (accessibility, UX consistency, design system compliance), architecture compliance (ADR adherence, approved patterns).
+
+**Human feedback loop:** engineers mark outputs as approved / rejected / partially approved with rationale. LoopForge stores this rationale as organizational judgment, available to future evaluations. No model training — structured storage only.
+
+**Regression detection:** if the score for an evaluation drops vs. the previous run on the same target, a regression is flagged.
 
 ---
 
-### Capability 5: Multi-Agent Workflow Engine
-A runtime for composing, executing, and monitoring multi-agent workflows — with a visual builder for non-infrastructure developers and a code SDK for power users.
+### Capability 5: Visual Context Engine
+Extends the project brain from code intelligence into visual intelligence. Developers upload screenshots or paste Figma URLs; LoopForge analyzes designs with a multimodal frontier model and links findings to code.
 
-**Workflow patterns supported:**
-- Sequential (chain)
-- Parallel fan-out / fan-in
-- Conditional branching (DAG)
-- Loop / iterative (with exit conditions)
-- Hierarchical (orchestrator spawning subagents)
-- Human-in-the-loop (workflow pauses awaiting human decision)
+**Analysis output:** UX issues, accessibility gaps, copy problems, suggested improvements, component names detected, required code changes.
 
-**Visual builder:**
-- Canvas-based node editor
-- Node types: Agent, Tool, Condition, Merge, Human Checkpoint, Trigger
-- Per-node configuration: model, context slice, tools, retry strategy, timeout
-- Real-time execution visualization
-- Step-through debugger
+**Design-to-code linking:** detected component names are matched against indexed code chunks, surfacing exactly which files to change.
 
-**Workflow triggers:**
-- Event-based (PR opened, ticket created, commit pushed)
-- Scheduled (nightly security scan, weekly backlog review)
-- Manual (developer invokes from UI)
-- API (external systems trigger via webhook)
-
-**Workflow marketplace:**
-- Publish workflows publicly or keep team-private
-- Fork and customize community workflows
-- Usage stats and ratings per workflow
+**Multimodal sessions:** images can be attached directly to session messages.
 
 ---
 
-### Capability 6: SDLC Integration Layer
-Hooks into the software development lifecycle — from code commit through release — that automate quality gates and provide intelligence at each stage.
+### Capability 6: Skill Discovery
+A searchable registry of AI capabilities that surfaces automatically based on what the developer is doing.
 
-**PR Review workflow (built-in):**
-- Security scan (SAST, dependency vulnerabilities, secret detection)
-- Code review (conventions, patterns, anti-patterns from project brain)
-- Test coverage check (targeted to changed files)
-- Results posted as PR comments
-- Blocking / warning configurable per check
+**Built-in skills:** debug, security-audit, code-review, test-generation, ui-fix, plan-feature, explain, changelog.
 
-**Release Pipeline:**
-- Release readiness score (configurable thresholds)
-- Changelog auto-generation from commits and closed tickets
-- Staged rollout management (percentages + monitoring)
-- Post-release metric monitoring
-- Auto-rollback trigger on anomaly
-
-**Testing Intelligence:**
-- File-change to test-suite mapping (targeted execution)
-- Test generation suggestions for uncovered code
-- Flaky test detection and quarantine
-- Failure explanation with root cause and fix suggestion
+**Capability Gap Advisor:** proactively surfaces expertise gaps (security, accessibility, performance, testing, architecture, documentation) based on session content.
 
 ---
 
-### Capability 7: Stakeholder View
-A clean, non-technical interface for non-developer stakeholders to see project status, find their feedback, and understand what's shipping — without access to code, PRs, or the full developer UI.
+### Capability 7: Multi-Provider Model Router
+Intelligent routing based on complexity, data classification, and cost.
 
-**What stakeholders see:**
-- Active work items (what the team is building right now)
-- Upcoming release (what ships next, ETA, readiness)
-- Their feedback (where it went, current status)
-- Recent releases (what shipped, what was fixed)
+**Tiers:** small (Qwen 7B — simple extraction), medium (code generation), frontier (reasoning, vision, architecture).
 
-**What stakeholders can do:**
-- Submit feedback directly (creates a ticket via the harness)
-- Approve release sign-offs (if added to a workflow as a human checkpoint)
-- Subscribe to release notifications
+**Data classification enforcement:** confidential and restricted data never leaves the network — automatically routed to on-prem Ollama.
+
+---
+
+### Capability 8: Multi-Agent Workflow Engine
+A runtime for composing, executing, and monitoring multi-agent workflows with human-in-the-loop checkpoints.
+
+**Built-in workflows:** PR review, bug investigation, release preparation, nightly security scan.
+
+**Eval integration:** workflow nodes can define evaluation suites; progression is blocked if the composite score falls below the configured threshold.
+
+---
+
+### Capability 9: AI-Maintained Backlog
+A project backlog that stays current automatically — linked to code activity, connected to requirements in the graph, and prioritized by AI.
+
+**Ticket lifecycle:** capture → classify → deduplicate → link to files → prioritize → update on PR activity → close on resolution.
+
+**Graph integration:** tickets ingest into the knowledge graph as nodes with IMPLEMENTS edges to code files.
 
 ---
 
 ## 5. User Journeys
 
-### Journey 1: First Session on a New Project
-1. Developer connects repo (GitHub OAuth or local path)
-2. DevOS scans the repo: detects stack, conventions, README, entry points
-3. Project brain is built (2–3 minutes for average repo)
-4. Developer opens a session — context is pre-loaded automatically
-5. DevOS surfaces 3 relevant skills based on recent commits
-6. Developer starts working without explaining anything
+### Journey 1: Requirement to Release — Full Trace
+1. PM creates a requirement: "Settlement processing under 2 seconds"
+2. Spec-driven flow generates a PRD → architecture doc → technical spec
+3. Spec approval triggers eval generation: `{ type: "performance", expected: "<2s" }`
+4. Epic decomposer creates tickets linked to relevant files in the brain
+5. Developer implements; PR merged
+6. Eval Engine runs the performance evaluation against the implementation
+7. EvalRun scores 0.92 — passes
+8. Knowledge graph now shows: Requirement → Spec → ADR → Code → PR → Release, with Requirement VALIDATED_BY Evaluation SCORES EvalRun
 
-**Success:** Developer is productive within 5 minutes of connecting a repo. Zero context-setting required.
-
-### Journey 2: Fixing a Bug with Multi-Agent Workflow
-1. Developer describes the bug in natural language
-2. DevOS classifies it as a debug task, activates Debug Workflow automatically
-3. Workflow: Reproducer agent → [Code analysis agent + Log analysis agent] in parallel → Fix proposer → Verifier
-4. Developer sees real-time progress on the canvas
-5. Fix proposed with explanation and test
-6. Developer accepts or edits, workflow opens a PR
-7. PR Review workflow triggers automatically on PR open
-
-**Success:** Bug diagnosed, fixed, and PR opened without developer manually orchestrating agents.
-
-### Journey 3: Stakeholder Feedback to Backlog
-1. Stakeholder messages in Slack: "users are saying the login is too slow"
-2. DevOS Slack bot detects and classifies: performance bug, auth module, high frequency
-3. Ticket created automatically, linked to auth files in project brain
-4. Priority scored: medium (3 reports in 7 days)
-5. Stakeholder receives confirmation: "I've created a ticket for this — it's currently #4 in priority"
-6. Developer sees it surfaced in next session start
-
-**Success:** Feedback captured, classified, and prioritized without any human touching Jira.
-
-### Journey 4: Release
-1. Developer triggers release from DevOS
-2. Release Prep workflow runs: [Changelog agent + Coverage agent + Security agent] in parallel
-3. Readiness score calculated: 87% — two minor issues flagged
-4. Developer resolves issues, score updates to 96%
-5. Stakeholder sign-off requested via Stakeholder View (human checkpoint)
-6. Stakeholder approves — workflow resumes
-7. Staged rollout begins: 10% → 50% → 100% with metric monitoring between stages
-8. Post-release: crash rate stable, backlog tickets auto-closed
-
-**Success:** Release shipped with full audit trail, stakeholder visibility, and zero manual checklist.
+**Query:** "Show all requirements validated by the Q3 release" → answered from the graph in one traversal.
 
 ---
 
-## 6. MVP Scope (V1)
+### Journey 2: Impact Analysis Before Refactor
+1. Engineer asks: "What breaks if we change the auth middleware?"
+2. LoopForge queries `/graph/:projectId/nodes/file:src/middleware/auth.ts/downstream`
+3. Graph returns: 4 specs reference it, 2 ADRs approve its current pattern, 12 tickets implement against it, 3 evaluation criteria validate it
+4. Engineer sees the full blast radius before writing a line of code
 
-The V1 must demonstrate the core value loop: **context → capability → execution.**
+---
 
-| Feature | V1 | V2 | V3 |
+### Journey 3: Design Review with Visual Context
+1. Designer uploads a screenshot of the checkout flow
+2. LoopForge analyzes: 3 accessibility issues, 2 UX problems, 1 copy issue
+3. Findings linked to `src/components/Checkout.tsx` and `src/components/PaymentForm.tsx`
+4. Visual asset ingested into knowledge graph: VisualAsset REFERENCES File
+5. If an eval suite exists for UX compliance, an EvalRun is created with the accessibility score
+
+---
+
+### Journey 4: First Session on a New Project
+1. Developer connects repo
+2. LoopForge scans: stack, conventions, entry points, file index
+3. File index ingested into knowledge graph: Repository CONTAINS File (for every indexed file)
+4. Developer opens a session — context pre-loaded, capability gaps surfaced, relevant skills recommended
+5. Developer starts working without explaining anything
+
+---
+
+## 6. Release Scope
+
+| Feature | Shipped | In Progress | Planned |
 |---|---|---|---|
-| Project brain (repo scan + session loading) | ✓ | | |
-| Skill discovery (built-in skills + recommender) | ✓ | | |
-| Skill marketplace (community) | | ✓ | |
-| Multi-provider model router (OpenRouter + Ollama) | ✓ | | |
-| Cost tracking dashboard | ✓ | | |
-| GitHub Issues backlog integration | ✓ | | |
-| Slack / email backlog ingestion | | ✓ | |
-| AI backlog prioritization | ✓ | | |
+| Project brain (repo scan + context loading) | ✓ | | |
+| Context packs | ✓ | | |
+| Skill discovery + capability gap advisor | ✓ | | |
+| Multi-provider model routing | ✓ | | |
 | Multi-agent workflow engine | ✓ | | |
-| Visual workflow builder | ✓ | | |
-| Workflow marketplace | | ✓ | |
-| PR review workflow (security + code review) | ✓ | | |
-| Release readiness scoring | | ✓ | |
-| Testing intelligence | | ✓ | |
-| Staged rollout management | | ✓ | |
-| Stakeholder view | | ✓ | |
-| Enterprise SSO | | ✓ | |
-| On-prem deployment | | ✓ | |
+| GitHub Issues backlog integration | ✓ | | |
+| ADR extraction and storage | ✓ | | |
+| Spec-driven development + approval | ✓ | | |
+| Supabase persistence + pgvector | ✓ | | |
+| Next.js developer UI | ✓ | | |
+| Visual Context Engine | ✓ | | |
+| Product Engineering Knowledge Graph | | ✓ | |
+| Eval Engine | | ✓ | |
+| Workflow marketplace | | | ✓ |
+| Slack / email backlog ingestion | | | ✓ |
+| PR review workflow with security scoring | | | ✓ |
+| Workflow visual builder | | | ✓ |
+| MCP server mode | | | ✓ |
+| Figma API integration | | | ✓ |
+| Enterprise SSO | | | ✓ |
 | IDE extensions | | | ✓ |
 
 ---
@@ -294,22 +229,22 @@ The V1 must demonstrate the core value loop: **context → capability → execut
 
 | Category | Requirement |
 |---|---|
-| **Performance** | Session context load < 10 seconds. Workflow node execution latency: p95 < 5s excluding model inference time. |
-| **Reliability** | Workflow execution durable — survives server restart, resumes from last completed node. |
-| **Security** | API keys stored in encrypted secrets vault, never exposed to client. All AI calls logged with identity, model, cost, timestamp. PII scrubbing configurable before cloud API calls. |
-| **Scalability** | Support concurrent workflow execution across projects. Context store scales to 1M+ document chunks per org. |
-| **Privacy** | Customer code and prompts never used for model training. On-prem deployment available with zero external data egress. |
-| **Compliance** | Audit log retention minimum 90 days. SOC2 Type II (target: 24 months). GDPR-compliant data handling. |
+| **Performance** | Session context load < 10 seconds. Graph traversal (depth 15) < 500ms for in-memory store. |
+| **Reliability** | Workflow execution survives server restart, resumes from last completed node. Graph ingestion failures are non-blocking — source-of-truth writes succeed regardless. |
+| **Security** | API keys never exposed to client. All AI calls logged with identity, model, cost, timestamp. Data classification enforced at the router — confidential/restricted never reaches cloud providers. |
+| **Scalability** | Context store scales to 1M+ chunks per org. Knowledge graph scales to 100K+ nodes per project via PostgreSQL. Supabase recursive CTEs handle traversal at production scale. |
+| **Privacy** | Customer code and prompts never used for model training. On-prem deployment available with zero external data egress. Eval feedback (organizational judgment) stored on-premise and never shared. |
+| **Compliance** | Audit log retention minimum 90 days. Eval feedback is append-only (immutable organizational record). SOC2 Type II target: 24 months. |
 | **Availability** | 99.9% uptime SLA for cloud tier. On-prem SLA managed by customer. |
-| **Interoperability** | OpenAI-compatible API surface for model routing. GitHub, GitLab webhook compatibility. Standard webhook support for SDLC triggers. |
+| **Interoperability** | OpenAI-compatible API surface. GitHub and GitLab webhook compatibility. Standard webhook support for SDLC triggers. |
 
 ---
 
 ## 8. Open Questions
 
-1. **Product name:** DevOS is a working title. Final name TBD.
-2. **Pricing model:** Per-seat vs. usage-based vs. hybrid. Enterprise contracts likely custom.
-3. **Open-source strategy:** Which components (orchestration engine, context manager) to open-source for community trust and adoption.
-4. **Workflow engine:** Build custom (TypeScript) or embed LangGraph.js. Trade-off: control vs. speed to market.
-5. **First integration priority:** GitHub Issues is the V1 backlog integration. What's second — Slack, Linear, or Jira?
-6. **On-prem packaging:** Docker Compose (simple) vs. Helm chart (enterprise-grade). Both eventually, but which first.
+1. **Pricing model:** Per-seat vs. usage-based vs. hybrid. Knowledge Graph and Evals are enterprise differentiators — likely gated on enterprise tier.
+2. **Graph database migration path:** When does the PostgreSQL adjacency-list store need to migrate to a native graph DB? Likely when a single project exceeds 500K nodes or traversal latency exceeds 1s.
+3. **Eval feedback UX:** How do engineers submit feedback efficiently in the flow of a PR review — inline comments that map to eval findings?
+4. **First integration priority beyond GitHub:** Slack (stakeholder feedback), Linear (backlog sync), or Jira (enterprise backlog)?
+5. **On-prem packaging:** Docker Compose (simple, current) vs. Helm chart (enterprise-grade). Both eventually — which first?
+6. **Open-source strategy:** Knowledge Graph and Eval Engine are strong candidates for open-sourcing. Router and Brain are the revenue moat.

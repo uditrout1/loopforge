@@ -14,6 +14,7 @@
     { "path": "../workflows" },
     { "path": "../spec" },
     { "path": "../adr" },
-    { "path": "../vision" }
+    { "path": "../vision" },
+    { "path": "../graph" }
   ]
 }

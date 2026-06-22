@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto"
 import type { VisualAsset } from "@loopforge/core"
 import type { RouterConfig } from "@loopforge/router"
 import type { BrainStore } from "@loopforge/brain"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestVisualAsset } from "@loopforge/graph"
 import { analyzeVisual } from "./analyzer.js"
 import type { AnalysisResult } from "./analyzer.js"
 import { linkToCode } from "./linker.js"
@@ -13,6 +15,7 @@ export class VisionService {
     private store: VisualAssetStore,
     private brainStore: BrainStore,
     private routerConfig: RouterConfig,
+    private graphStore?: GraphStore,
   ) {}
 
   async analyzeScreenshot(
@@ -57,6 +60,9 @@ export class VisionService {
       updatedAt: new Date(),
     }
     await this.store.saveAsset(updated)
+    if (this.graphStore !== undefined) {
+      ingestVisualAsset(updated, this.graphStore).catch(() => {})
+    }
 
     return { asset: updated, analysis }
   }
@@ -101,6 +107,9 @@ export class VisionService {
       updatedAt: new Date(),
     }
     await this.store.saveAsset(updated)
+    if (this.graphStore !== undefined) {
+      ingestVisualAsset(updated, this.graphStore).catch(() => {})
+    }
 
     return { asset: updated, analysis }
   }

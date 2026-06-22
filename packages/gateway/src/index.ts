@@ -10,6 +10,8 @@ import { listWorkflows, createRun, getRun, resumeRun, startRun } from "@loopforg
 import { createSpecRouter, createInMemorySpecStore } from "@loopforge/spec"
 import { createADRRouter, ADRService, createInMemoryADRStore } from "@loopforge/adr"
 import { createVisionRouter, VisionService, createInMemoryVisualAssetStore } from "@loopforge/vision"
+import { createGraphRouter, createInMemoryGraphStore } from "@loopforge/graph"
+import type { GraphStore } from "@loopforge/graph"
 import type { Context, Next } from "hono"
 import { BUILT_IN_PACKS } from "@loopforge/brain"
 import type { BrainStore } from "@loopforge/brain"
@@ -124,16 +126,19 @@ function main() {
     forceOnPremForClassifications: ["confidential", "restricted"],
   }
 
+  // Graph store (shared singleton)
+  const graphStore: GraphStore = createInMemoryGraphStore()
+
   // ADR store and service (created early so sessions router can reference it)
   const adrStore = createInMemoryADRStore()
-  const adrService = new ADRService(adrStore, routerConfig)
+  const adrService = new ADRService(adrStore, routerConfig, graphStore)
 
   app.route("/projects", projectsRouter)
   app.route("/sessions", createSessionsRouter(store, routerConfig, adrService))
 
   // Backlog routes
   app.use("/backlog/*", requireApiKey)
-  const backlogService = new BacklogService(createInMemoryTicketStore())
+  const backlogService = new BacklogService(createInMemoryTicketStore(), graphStore)
   const webhookSecret = process.env["GITHUB_WEBHOOK_SECRET"]
   app.route("/backlog", createBacklogRouter(backlogService, webhookSecret))
 
@@ -143,15 +148,19 @@ function main() {
 
   // Spec routes
   app.use("/specs/*", requireApiKey)
-  app.route("/specs", createSpecRouter(createInMemorySpecStore(), routerConfig))
+  app.route("/specs", createSpecRouter(createInMemorySpecStore(), routerConfig, graphStore))
 
   // ADR routes
   app.use("/adrs/*", requireApiKey)
   app.route("/adrs", createADRRouter(adrService))
 
+  // Graph routes
+  app.use("/graph/*", requireApiKey)
+  app.route("/graph", createGraphRouter(graphStore))
+
   // Vision routes
   app.use("/vision/*", requireApiKey)
-  const visionService = new VisionService(createInMemoryVisualAssetStore(), store, routerConfig)
+  const visionService = new VisionService(createInMemoryVisualAssetStore(), store, routerConfig, graphStore)
   app.route("/vision", createVisionRouter(visionService))
 
   // Workflow routes

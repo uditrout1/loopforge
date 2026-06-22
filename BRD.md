@@ -1,5 +1,5 @@
 # Business Requirements Document
-## DevOS — The AI Developer Operating System
+## LoopForge — Product Engineering Intelligence
 **Version:** 0.1 (Draft)
 **Date:** 2026-06-21
 **Status:** Internal Working Document
@@ -10,9 +10,9 @@
 
 Enterprise software teams and individual developers are adopting AI tooling rapidly but operating without infrastructure to manage it. Each team independently solves the same problems — context loss between sessions, uncontrolled AI costs, inconsistent security, no verification of AI outputs, fragmented project management — at enormous cumulative cost in time and risk.
 
-DevOS is an AI-native developer operating system that provides a unified platform for building, managing, and operating AI-assisted software development. It replaces the patchwork of disconnected tools (Jira, GitHub Actions, separate AI providers, custom scripts) with a single system that shares context, enforces policy, and executes multi-agent workflows across the full software development lifecycle.
+LoopForge is an AI-native developer operating system that provides a unified platform for building, managing, and operating AI-assisted software development. It replaces the patchwork of disconnected tools (Jira, GitHub Actions, separate AI providers, custom scripts) with a single system that shares context, enforces policy, and executes multi-agent workflows across the full software development lifecycle.
 
-The business opportunity: enterprises are in the POC-to-production transition for AI tooling. They have demonstrated value in pilots and now need infrastructure to scale. No single product owns this space. DevOS is that product.
+The business opportunity: enterprises are in the POC-to-production transition for AI tooling. They have demonstrated value in pilots and now need infrastructure to scale. No single product owns this space. LoopForge is that product.
 
 ---
 
@@ -37,7 +37,7 @@ Developers using AI tools today face seven compounding problems:
 - **Enterprise engineering orgs (100+ developers)** — compliance, security, governance, cost accountability at scale
 
 ### 2.3 Evidence From Practice
-DevOS emerged directly from the experience of building Ichi, a digital de-addiction app for Indian exam students. Building Ichi with AI assistance required parallel sub-agents for complex features, manual context reconstruction every session, ad-hoc security reviews, no structured skill discovery, and improvised multi-agent orchestration. These frictions are not unique to Ichi — they are universal to AI-assisted development.
+LoopForge emerged directly from the experience of building Ichi, a digital de-addiction app for Indian exam students. Building Ichi with AI assistance required parallel sub-agents for complex features, manual context reconstruction every session, ad-hoc security reviews, no structured skill discovery, and improvised multi-agent orchestration. These frictions are not unique to Ichi — they are universal to AI-assisted development.
 
 ---
 
@@ -63,10 +63,10 @@ Enterprises are at the critical inflection: POC → production. This transition 
 | LangGraph / CrewAI | Orchestration libraries | No UI, developer-only, no SDLC integration |
 | Braintrust | AI evals | Narrow scope, no workflow management |
 
-**No single product combines:** persistent project context + AI orchestration + backlog management + CI/CD intelligence + skill discovery. DevOS does.
+**No single product combines:** persistent project context + AI orchestration + backlog management + CI/CD intelligence + skill discovery. LoopForge does.
 
 ### 3.4 Competitive Moat
-1. **Bundling** — individual tools require 5+ vendor relationships; DevOS is one
+1. **Bundling** — individual tools require 5+ vendor relationships; LoopForge is one
 2. **Shared context** — every capability (testing, backlog, release, agents) reads the same project brain; competitors are siloed
 3. **On-prem deployment** — cloud-only competitors cannot serve data-residency-constrained enterprises (banking, healthcare, government)
 4. **Workflow marketplace** — community-built multi-agent workflows create network effects
@@ -156,7 +156,7 @@ Enterprises are at the critical inflection: POC → production. This transition 
 ### Product Metrics
 - Weekly Active Users per account (target: >80%)
 - Workflows run per developer per week
-- AI cost reduction percentage vs. pre-DevOS baseline
+- AI cost reduction percentage vs. pre-LoopForge baseline
 - Skills activated per session (measures discovery effectiveness)
 - Backlog staleness rate (tickets not updated in 30+ days — target: <5%)
 
@@ -171,6 +171,6 @@ Enterprises are at the critical inflection: POC → production. This transition 
 
 1. Customer data (code, prompts, outputs) must never be used to train AI models without explicit opt-in consent.
 2. On-prem deployments must function with zero data leaving the customer's infrastructure.
-3. AI costs incurred by DevOS on behalf of the customer must be transparently reported and attributable to specific projects and teams.
+3. AI costs incurred by LoopForge on behalf of the customer must be transparently reported and attributable to specific projects and teams.
 4. All AI API calls must be logged with sufficient detail for compliance audit (who, what model, when, cost) for a minimum of 90 days.
 5. Skills and workflows published to the public marketplace must be reviewed before listing.

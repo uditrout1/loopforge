@@ -3,6 +3,8 @@ import type { Context } from "hono"
 import { randomUUID } from "node:crypto"
 import type { RouterConfig } from "@loopforge/router"
 import type { SpecType } from "@loopforge/core"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestSpec } from "@loopforge/graph"
 import type { SpecStore } from "./store.js"
 import { generatePRD, generateArchitectureDoc, generateTechnicalSpec } from "./generator.js"
 import { submitForReview, approveSpec, rejectSpec } from "./approval.js"
@@ -38,7 +40,7 @@ function getParam(c: Context, name: string): string | null {
   return val ?? null
 }
 
-export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): Hono {
+export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig, graphStore?: GraphStore): Hono {
   const app = new Hono()
 
   // GET /specs/:projectId — list specs
@@ -133,6 +135,9 @@ export function createSpecRouter(store: SpecStore, routerConfig: RouterConfig): 
     }
 
     await store.saveSpec(spec)
+    if (graphStore !== undefined) {
+      ingestSpec(spec, graphStore).catch(() => {})
+    }
     return c.json({ spec }, 201)
   })
 

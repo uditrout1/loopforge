@@ -3,11 +3,14 @@ import { extractDecisions } from "./extractor.js"
 import type { ADRStore } from "./store.js"
 import type { RouterConfig } from "@loopforge/router"
 import type { ADR, ADRStatus, Message } from "@loopforge/core"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestADR } from "@loopforge/graph"
 
 export class ADRService {
   constructor(
     private store: ADRStore,
     private routerConfig: RouterConfig,
+    private graphStore?: GraphStore,
   ) {}
 
   async captureFromSession(
@@ -61,6 +64,9 @@ export class ADRService {
     }
 
     await this.store.saveADR(adr)
+    if (this.graphStore !== undefined) {
+      ingestADR(adr, this.graphStore).catch(() => {})
+    }
     return adr
   }
 

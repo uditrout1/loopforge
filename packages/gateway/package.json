@@ -22,6 +22,7 @@
     "@loopforge/spec": "workspace:*",
     "@loopforge/adr": "workspace:*",
     "@loopforge/vision": "workspace:*",
+    "@loopforge/graph": "workspace:*",
     "hono": "^4.4.0",
     "@hono/node-server": "^1.12.0"
   },

@@ -15,6 +15,7 @@
     "@loopforge/core": "workspace:*",
     "@loopforge/router": "workspace:*",
     "@loopforge/brain": "workspace:*",
+    "@loopforge/graph": "workspace:*",
     "hono": "^4.4.0"
   },
   "devDependencies": {

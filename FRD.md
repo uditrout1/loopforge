@@ -1,5 +1,5 @@
 # Functional Requirements Document
-## DevOS — The AI Developer Operating System
+## LoopForge — Product Engineering Intelligence
 **Version:** 0.1 (Draft)
 **Date:** 2026-06-21
 **Status:** Internal Working Document
@@ -8,7 +8,7 @@
 
 ## 1. System Overview
 
-DevOS consists of five functional subsystems that share a common data layer:
+LoopForge consists of five functional subsystems that share a common data layer:
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -37,10 +37,10 @@ DevOS consists of five functional subsystems that share a common data layer:
 ## 2. Feature: Project Brain
 
 ### FR-B-01: Repository Connection
-**Description:** User connects a code repository to DevOS. The system ingests and indexes the repository to build the project brain.
+**Description:** User connects a code repository to LoopForge. The system ingests and indexes the repository to build the project brain.
 
 **User Story:**
-> As a developer, I want to connect my GitHub repository to DevOS so that the system understands my project without me explaining it.
+> As a developer, I want to connect my GitHub repository to LoopForge so that the system understands my project without me explaining it.
 
 **Functional Requirements:**
 - System shall support GitHub OAuth repository connection
@@ -278,23 +278,23 @@ DevOS consists of five functional subsystems that share a common data layer:
 ## 5. Feature: AI-Maintained Backlog
 
 ### FR-BK-01: Backlog Ingestion — GitHub Issues
-**Description:** GitHub Issues for connected repositories are ingested and maintained in the DevOS backlog.
+**Description:** GitHub Issues for connected repositories are ingested and maintained in the LoopForge backlog.
 
 **User Story:**
-> As a developer, I want my GitHub Issues visible in DevOS so the AI understands what work is outstanding.
+> As a developer, I want my GitHub Issues visible in LoopForge so the AI understands what work is outstanding.
 
 **Functional Requirements:**
 - System shall connect to GitHub Issues via OAuth with read/write permissions
 - System shall sync all open issues on initial connection
 - System shall receive issue events via GitHub webhook (created, updated, closed, labelled)
-- System shall map GitHub labels to DevOS ticket types: bug, feature, debt, security
-- System shall create new GitHub issues when a DevOS ticket is created
-- System shall close GitHub issues when a DevOS ticket is resolved
+- System shall map GitHub labels to LoopForge ticket types: bug, feature, debt, security
+- System shall create new GitHub issues when a LoopForge ticket is created
+- System shall close GitHub issues when a LoopForge ticket is resolved
 
 **Acceptance Criteria:**
-- [ ] All open GitHub Issues appear in DevOS backlog within 60 seconds of connection
-- [ ] Creating a ticket in DevOS creates a corresponding GitHub Issue
-- [ ] Closing a GitHub Issue closes the DevOS ticket within 60 seconds
+- [ ] All open GitHub Issues appear in LoopForge backlog within 60 seconds of connection
+- [ ] Creating a ticket in LoopForge creates a corresponding GitHub Issue
+- [ ] Closing a GitHub Issue closes the LoopForge ticket within 60 seconds
 
 ---
 
@@ -447,7 +447,7 @@ DevOS consists of five functional subsystems that share a common data layer:
 ---
 
 ### FR-W-05: Built-In Workflow Library
-**Description:** DevOS ships with a set of pre-built workflows covering common developer tasks.
+**Description:** LoopForge ships with a set of pre-built workflows covering common developer tasks.
 
 **User Story:**
 > As a developer, I want pre-built workflows for common tasks so I don't have to build everything from scratch.

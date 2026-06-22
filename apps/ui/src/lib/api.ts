@@ -191,6 +191,107 @@ export async function analyzeScreenshot(
   return res.json() as Promise<VisualAnalysis>;
 }
 
+// ─── Knowledge Graph ──────────────────────────────────────────────────────────
+
+export interface GraphSummary {
+  nodeCount: number;
+  edgeCount: number;
+  byType: Record<string, number>;
+}
+
+export interface GraphNodeData {
+  id: string;
+  projectId: string;
+  entityType: string;
+  title: string;
+  metadata: Record<string, unknown>;
+  sourceSystem: string;
+  sourceId: string;
+}
+
+export interface GraphEdgeData {
+  id: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  relationship: string;
+  confidence: number;
+}
+
+export interface GraphSubgraphData {
+  nodes: GraphNodeData[];
+  edges: GraphEdgeData[];
+}
+
+export async function getGraphSummary(projectId: string): Promise<GraphSummary> {
+  const res = await fetch(`${GATEWAY_URL}/graph/${projectId}/summary`, {
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch graph summary: ${res.statusText}`);
+  return res.json() as Promise<GraphSummary>;
+}
+
+export async function getGraphNodes(
+  projectId: string,
+  entityType?: string
+): Promise<GraphNodeData[]> {
+  const url = new URL(`${GATEWAY_URL}/graph/${projectId}/nodes`);
+  if (entityType !== undefined) url.searchParams.set("type", entityType);
+  const res = await fetch(url.toString(), { headers: headers() });
+  if (!res.ok) throw new Error(`Failed to fetch graph nodes: ${res.statusText}`);
+  const data = await res.json() as { nodes: GraphNodeData[] };
+  return data.nodes;
+}
+
+export async function getGraphNode(
+  projectId: string,
+  nodeId: string
+): Promise<{ node: GraphNodeData; edgesOut: GraphEdgeData[]; edgesIn: GraphEdgeData[] }> {
+  const res = await fetch(
+    `${GATEWAY_URL}/graph/${projectId}/nodes/${encodeURIComponent(nodeId)}`,
+    { headers: headers() }
+  );
+  if (!res.ok) throw new Error(`Failed to fetch graph node: ${res.statusText}`);
+  return res.json() as Promise<{ node: GraphNodeData; edgesOut: GraphEdgeData[]; edgesIn: GraphEdgeData[] }>;
+}
+
+export async function getGraphUpstream(
+  projectId: string,
+  nodeId: string
+): Promise<GraphSubgraphData> {
+  const res = await fetch(
+    `${GATEWAY_URL}/graph/${projectId}/nodes/${encodeURIComponent(nodeId)}/upstream`,
+    { headers: headers() }
+  );
+  if (!res.ok) throw new Error(`Failed to fetch upstream: ${res.statusText}`);
+  return res.json() as Promise<GraphSubgraphData>;
+}
+
+export async function getGraphDownstream(
+  projectId: string,
+  nodeId: string
+): Promise<GraphSubgraphData> {
+  const res = await fetch(
+    `${GATEWAY_URL}/graph/${projectId}/nodes/${encodeURIComponent(nodeId)}/downstream`,
+    { headers: headers() }
+  );
+  if (!res.ok) throw new Error(`Failed to fetch downstream: ${res.statusText}`);
+  return res.json() as Promise<GraphSubgraphData>;
+}
+
+export async function searchGraph(
+  projectId: string,
+  query: string,
+  entityType?: string
+): Promise<GraphNodeData[]> {
+  const url = new URL(`${GATEWAY_URL}/graph/${projectId}/search`);
+  url.searchParams.set("q", query);
+  if (entityType !== undefined) url.searchParams.set("type", entityType);
+  const res = await fetch(url.toString(), { headers: headers() });
+  if (!res.ok) throw new Error(`Failed to search graph: ${res.statusText}`);
+  const data = await res.json() as { nodes: GraphNodeData[] };
+  return data.nodes;
+}
+
 export async function analyzeFigmaUrl(
   projectId: string,
   url: string,

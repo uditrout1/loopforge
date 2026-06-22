@@ -1,5 +1,5 @@
 {
-  "name": "@loopforge/backlog",
+  "name": "@loopforge/graph",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@loopforge/core": "workspace:*",
-    "@loopforge/graph": "workspace:*",
     "hono": "^4.4.0"
   },
   "devDependencies": {

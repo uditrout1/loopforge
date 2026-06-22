@@ -360,6 +360,62 @@ export interface VisualAsset {
   updatedAt: Date
 }
 
+// ─── Knowledge Graph ──────────────────────────────────────────────────────────
+
+export type GraphEntityType =
+  | "prd" | "requirement" | "acceptance_criteria" | "user_story"
+  | "architecture_doc" | "adr" | "technical_decision"
+  | "visual_asset" | "design_component" | "wireframe"
+  | "repository" | "module" | "file" | "api_endpoint" | "database_table"
+  | "epic" | "ticket" | "pull_request" | "release"
+  | "spec" | "evaluation" | "eval_run" | "test_suite" | "compliance_check"
+
+export type GraphRelationship =
+  | "REQUIRES" | "DEFINES" | "GENERATES" | "IMPLEMENTS" | "REFERENCES"
+  | "VALIDATES" | "APPROVES" | "SUPERSEDES" | "DEPENDS_ON" | "IMPACTS"
+  | "CONTAINS" | "INCLUDED_IN" | "LINKED_TO" | "VALIDATED_BY" | "SCORES"
+  | "TAGGED_IN"
+
+export interface GraphNode {
+  id: string                          // "{entityType}:{sourceId}"
+  projectId: string
+  entityType: GraphEntityType
+  title: string
+  metadata: Record<string, unknown>
+  sourceSystem: string
+  sourceId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface GraphEdge {
+  id: string                          // "{relationship}:{sourceNodeId}:{targetNodeId}"
+  projectId: string
+  sourceNodeId: string
+  targetNodeId: string
+  relationship: GraphRelationship
+  confidence: number                  // 0–1
+  metadata: Record<string, unknown>
+  createdAt: Date
+}
+
+export interface GraphSubgraph {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+}
+
+export interface TraceResult {
+  path: GraphNode[]
+  edges: GraphEdge[]
+  found: boolean
+}
+
+export interface ImpactResult {
+  origin: GraphNode
+  downstream: GraphSubgraph
+  affectedTypes: Partial<Record<GraphEntityType, number>>
+}
+
 // ─── Audit ───────────────────────────────────────────────────────────────────
 
 export interface AuditEntry {
