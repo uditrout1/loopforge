@@ -8,3 +8,4 @@ export { searchNodes } from "./search.js"
 export { trace } from "./traversal.js"
 
 export { createGraphRouter } from "./graph-router.js"
+export { ingestScannedDocs } from "./doc-ingestion.js"

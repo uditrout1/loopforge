@@ -1,9 +1,11 @@
 import { Hono } from "hono"
 import { randomUUID } from "node:crypto"
 import { resolve, sep } from "node:path"
-import { indexRepository } from "@loopforge/brain"
+import { indexRepository, scanDocs } from "@loopforge/brain"
 import type { BrainStore } from "@loopforge/brain"
 import type { Project } from "@loopforge/core"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestScannedDocs } from "@loopforge/graph"
 
 // Fix 1: path traversal — only allow repos under configured roots.
 // Set ALLOWED_REPO_ROOTS as colon-separated list; defaults to $HOME.
@@ -42,7 +44,7 @@ function validateRepoPath(raw: string): string {
 
 const projects = new Map<string, Project>()
 
-export function createProjectsRouter(store?: BrainStore) {
+export function createProjectsRouter(store?: BrainStore, graphStore?: GraphStore) {
   const app = new Hono()
 
   app.post("/", async (c) => {
@@ -90,6 +92,16 @@ export function createProjectsRouter(store?: BrainStore) {
         }
         existing.indexedAt = new Date()
         console.log(`[brain] Indexed ${fileCount} files for project ${projectId}`)
+
+        if (graphStore) {
+          scanDocs(repoPath)
+            .then(docs => {
+              console.log(`[graph] Found ${docs.length} doc(s) for ${projectId}`)
+              return ingestScannedDocs(projectId, docs, graphStore)
+            })
+            .then(() => console.log(`[graph] Doc ingestion complete for ${projectId}`))
+            .catch((err: unknown) => console.error(`[graph] Doc ingestion failed for ${projectId}:`, err))
+        }
       })
       .catch((err: unknown) => {
         console.error(`[brain] Indexing failed for ${projectId}:`, err)

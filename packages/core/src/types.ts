@@ -520,3 +520,15 @@ export interface GoalDecomposition {
   }>
   reasoning: string
 }
+
+// ─── Doc Scanner ─────────────────────────────────────────────────────────────
+
+export type ScannedDocType = "prd" | "brd" | "frd" | "adr" | "spec" | "readme" | "claude_md" | "unknown_doc"
+
+export interface ScannedDoc {
+  relPath: string
+  absPath: string
+  type: ScannedDocType
+  content: string
+  title: string
+}

@@ -1,4 +1,6 @@
 export { indexRepository } from "./indexer.js"
+export { scanDocs } from "./doc-scanner.js"
+export type { ScannedDoc } from "@loopforge/core"
 export { chunkFile } from "./chunker.js"
 export { loadSessionContext, formatContextAsSystemPrompt, formatContextAsUserMessage } from "./loader.js"
 export type { BrainStore } from "./loader.js"

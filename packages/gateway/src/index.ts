@@ -114,13 +114,6 @@ function main() {
   app.use("/projects/*", requireApiKey)
   app.use("/sessions/*", requireApiKey)
 
-  // First pass: get the projectsStore map reference (no store yet)
-  const { projectsStore } = createProjectsRouter()
-  // Create the brain store wrapping the projects map
-  const store = createInMemoryBrainStore(projectsStore)
-  // Second pass: create the router with the store wired in for pack routes
-  const { router: projectsRouter } = createProjectsRouter(store)
-
   const openRouterKey = process.env["OPENROUTER_API_KEY"]
   const routerConfig = {
     ...(openRouterKey !== undefined ? { openRouterApiKey: openRouterKey } : {}),
@@ -128,8 +121,15 @@ function main() {
     forceOnPremForClassifications: ["confidential", "restricted"],
   }
 
-  // Graph store (shared singleton)
+  // Graph store (shared singleton — declared early so projects router can use it)
   const graphStore: GraphStore = createInMemoryGraphStore()
+
+  // First pass: get the projectsStore map reference (no brain store yet)
+  const { projectsStore } = createProjectsRouter(undefined, graphStore)
+  // Create the brain store wrapping the projects map
+  const store = createInMemoryBrainStore(projectsStore)
+  // Second pass: create the router with both stores wired in
+  const { router: projectsRouter } = createProjectsRouter(store, graphStore)
 
   // ADR store and service (created early so sessions router can reference it)
   const adrStore = createInMemoryADRStore()
