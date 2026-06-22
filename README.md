@@ -83,14 +83,15 @@ LoopForge becomes your system of record for knowledge, decisions, and judgment.
 | `@loopforge/spec` | PRD, architecture doc, and technical spec generation with approval workflows |
 | `@loopforge/vision` | Visual Context Engine — screenshots, Figma, wireframes linked to code |
 | `@loopforge/graph` | Product Engineering Knowledge Graph — lineage, impact analysis, traceability |
-| `@loopforge/evals` | Eval Engine — converts requirements and standards into executable quality criteria |
+| `@loopforge/evals` | Eval Engine — converts requirements and standards into executable quality criteria; AI scoring, human feedback, regression detection |
+| `@loopforge/goals` | Engineering Goals — Claude decomposes high-level goals into tickets, tracks progress, surfaces blockers |
 | `@loopforge/db` | Supabase persistence adapter (pgvector for embeddings) |
 | `@loopforge/gateway` | Hono HTTP gateway (port 18790), all routes, auth middleware |
-| `apps/ui` | Next.js 15 developer UI — chat, skill browser, pack selector, graph explorer, cost dashboard |
+| `apps/ui` | Next.js 15 developer UI — Vibe Coder wizard, chat, skill browser, pack selector, graph explorer, goals, evals, cost dashboard |
 
 **Package dependency order:**
 ```
-core ← brain, router, skills, backlog, adr, spec, vision, graph, evals ← workflows ← gateway
+core ← brain, router, skills, backlog, adr, spec, vision, graph, evals, goals ← workflows ← gateway
 ```
 
 ---
@@ -119,6 +120,7 @@ core ← brain, router, skills, backlog, adr, spec, vision, graph, evals ← wor
 - **Intelligent Model Routing** — complexity-based tier selection: simple tasks → small model (Qwen 7B), code gen → medium, debugging/architecture → frontier
 - **Data Classification Enforcement** — confidential/restricted projects automatically routed to on-prem Ollama; data never leaves your network
 - **Eval Engine** — structured evaluation suites with AI scoring, human feedback capture, and regression detection
+- **Engineering Goals** — set a high-level goal ("Ship Family Controls integration"), Claude decomposes it into sprint-ready tickets with dependency ordering; progress tracked as tickets resolve; blockers surfaced automatically
 
 ### Release
 - **Epic Decomposer** — `POST /projects/:id/decompose` turns an epic description into sprint-ready tickets with file links pre-populated
@@ -151,7 +153,7 @@ pnpm dev
 ### Connect a project
 
 ```bash
-# Connect a repo
+# Connect an existing repo (indexes code + parses CLAUDE.md/PRD.md/BRD.md into graph)
 curl -X POST http://localhost:18790/projects \
   -H "Content-Type: application/json" \
   -d '{"name": "my-app", "repoPath": "/path/to/repo"}'
@@ -160,6 +162,16 @@ curl -X POST http://localhost:18790/projects \
 curl -X POST http://localhost:18790/sessions \
   -H "Content-Type: application/json" \
   -d '{"projectId": "<id>", "packId": "auth"}'
+
+# Set an engineering goal — Claude decomposes it into tickets automatically
+curl -X POST http://localhost:18790/goals/<projectId> \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Ship Family Controls integration", "description": "Add screen time restrictions using ScreenTimeAPI entitlement", "autoDecompose": true}'
+
+# Run an eval against a spec or file
+curl -X POST http://localhost:18790/evals/<projectId>/run \
+  -H "Content-Type: application/json" \
+  -d '{"criteriaId": "<id>", "targetType": "spec", "targetId": "<specId>", "content": "..."}'
 
 # Analyze a screenshot
 curl -X POST http://localhost:18790/vision/<projectId>/screenshot \
@@ -207,6 +219,27 @@ All routes require `X-API-Key: <LOOPFORGE_API_KEY>` when `HOST != 127.0.0.1`.
 | `GET` | `/graph/:projectId/search` | Full-text search over node titles |
 | `POST` | `/graph/:projectId/nodes` | Manually create a node |
 | `POST` | `/graph/:projectId/edges` | Manually create an edge |
+
+### Engineering Goals
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/goals/:projectId` | List goals with progress |
+| `POST` | `/goals/:projectId` | Create goal (Claude decomposes if `autoDecompose: true`) |
+| `POST` | `/goals/:projectId/:goalId/decompose` | Re-decompose goal into tickets |
+| `PATCH` | `/goals/:projectId/:goalId/tickets/:ticketId` | Update ticket status / mark as blocker |
+| `DELETE` | `/goals/:projectId/:goalId` | Delete goal |
+
+### Evals
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/evals/:projectId/criteria` | List evaluation criteria |
+| `POST` | `/evals/:projectId/criteria` | Create criteria (name, prompt, threshold) |
+| `POST` | `/evals/:projectId/run` | Run an eval against content |
+| `GET` | `/evals/:projectId/runs` | List runs (optional `?criteriaId=`) |
+| `POST` | `/evals/:projectId/runs/:runId/feedback` | Submit human feedback (approved/rejected/partial) |
+| `GET` | `/evals/:projectId/summary` | Pass rate, regression count, total runs |
 
 ### Backlog & Workflows
 
@@ -307,10 +340,15 @@ For confidential/restricted workloads, omit `OPENROUTER_API_KEY` — all request
 - [x] Supabase persistence + pgvector semantic search
 - [x] Next.js 15 developer UI
 - [x] Visual Context Engine (screenshots, Figma, design-to-code linking, UX/a11y analysis)
+- [x] Product Engineering Knowledge Graph — lineage, impact analysis, BFS traversal, graph explorer UI
+- [x] Eval Engine — evaluation criteria, AI scoring, human feedback loop, regression detection
+- [x] Engineering Goals — Claude decomposes goals into tickets, progress tracking, blocker surfacing
+- [x] Vibe Coder wizard — start from scratch with BRD/FRD/PRD templates + AI fill; or connect an existing repo
 
 ### In Progress
-- [ ] **Product Engineering Knowledge Graph** — connects requirements, decisions, implementation, and quality outcomes; lineage tracing, impact analysis, traceability queries
-- [ ] **Eval Engine** — converts requirements and standards into machine-executable evaluation criteria; AI scoring, human feedback loop, regression detection
+- [ ] **Deep repo analysis** — Claude-generated architecture summary, Swift/iOS stack detection, auto-ticket creation from TODOs, chunk storage fix
+- [ ] **Project page overhaul** — rich dashboard showing stack, knowledge summary, TODOs, entry points
+- [ ] **Docs backend** — `POST /projects/:id/initiate` saves BRD/FRD/PRD as specs; `POST /docs/ai-assist` fills templates from codebase context
 
 ### Coming
 - [ ] Workflow marketplace — community-contributed workflow definitions

@@ -701,7 +701,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
               letterSpacing: "0.06em",
             }}
           >
-            {isUser ? "You" : "DevOS"}
+            {isUser ? "You" : "LoopForge"}
           </span>
           {!isUser && message.model && (
             <span style={{ fontSize: "11px", color: "#333" }}>

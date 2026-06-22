@@ -96,7 +96,7 @@ function VisionPageInner({ projectId }: { projectId: string }) {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a", padding: "48px 32px", maxWidth: "900px", margin: "0 auto" }}>
       <nav style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "40px", fontSize: "13px", color: "#555" }}>
-        <Link href="/" style={{ color: "#555", textDecoration: "none" }}>DevOS</Link>
+        <Link href="/" style={{ color: "#555", textDecoration: "none" }}>LoopForge</Link>
         <span>/</span>
         <Link href={`/projects/${projectId}`} style={{ color: "#555", textDecoration: "none" }}>Project</Link>
         <span>/</span>

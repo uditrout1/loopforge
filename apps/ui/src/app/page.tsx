@@ -40,26 +40,43 @@ export default async function HomePage() {
               color: "#f0f0f0",
             }}
           >
-            DevOS
+            LoopForge
           </h1>
           <p style={{ color: "#666", fontSize: "13px", marginTop: "4px" }}>
-            AI developer operating system
+            Product Engineering Intelligence
           </p>
         </div>
-        <Link
-          href="/projects/new"
-          style={{
-            background: "#f0f0f0",
-            color: "#0a0a0a",
-            padding: "8px 16px",
-            borderRadius: "6px",
-            fontSize: "13px",
-            fontWeight: 500,
-            textDecoration: "none",
-          }}
-        >
-          Connect repo
-        </Link>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <Link
+            href="/projects/new"
+            style={{
+              background: "#1a1a1a",
+              color: "#e8e8e8",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              textDecoration: "none",
+              border: "1px solid #2a2a2a",
+            }}
+          >
+            Connect repo
+          </Link>
+          <Link
+            href="/projects/new?mode=vibe"
+            style={{
+              background: "#f0f0f0",
+              color: "#0a0a0a",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              textDecoration: "none",
+            }}
+          >
+            Start from scratch →
+          </Link>
+        </div>
       </header>
 
       {error && (
@@ -89,24 +106,40 @@ export default async function HomePage() {
         >
           <p style={{ color: "#444", fontSize: "14px" }}>No projects yet.</p>
           <p style={{ color: "#333", fontSize: "13px", marginTop: "8px" }}>
-            Connect a repo to get started.
+            Connect an existing repo or start from scratch.
           </p>
-          <Link
-            href="/projects/new"
-            style={{
-              display: "inline-block",
-              marginTop: "24px",
-              background: "#1a1a1a",
-              color: "#e8e8e8",
-              padding: "10px 20px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              textDecoration: "none",
-              border: "1px solid #2a2a2a",
-            }}
-          >
-            Connect a repo
-          </Link>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "24px" }}>
+            <Link
+              href="/projects/new"
+              style={{
+                display: "inline-block",
+                background: "#1a1a1a",
+                color: "#e8e8e8",
+                padding: "10px 20px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                textDecoration: "none",
+                border: "1px solid #2a2a2a",
+              }}
+            >
+              Connect a repo
+            </Link>
+            <Link
+              href="/projects/new?mode=vibe"
+              style={{
+                display: "inline-block",
+                background: "#f0f0f0",
+                color: "#0a0a0a",
+                padding: "10px 20px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              Start from scratch →
+            </Link>
+          </div>
         </div>
       )}
 

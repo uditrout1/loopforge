@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DevOS",
-  description: "AI developer operating system",
+  title: "LoopForge",
+  description: "Product Engineering Intelligence",
 };
 
 export default function RootLayout({

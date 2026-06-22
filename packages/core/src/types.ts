@@ -432,3 +432,91 @@ export interface AuditEntry {
   piiScrubbed: boolean
   timestamp: Date
 }
+
+// ─── Eval Engine ─────────────────────────────────────────────────────────────
+
+export type EvalType =
+  | "engineering_standard"
+  | "product_criteria"
+  | "design_standard"
+  | "architecture_compliance"
+
+export type EvalStatus = "pending" | "running" | "passed" | "failed" | "error"
+
+export type FeedbackVerdict = "approved" | "rejected" | "partial"
+
+export interface EvalCriteria {
+  id: string
+  projectId: string
+  name: string
+  description: string
+  type: EvalType
+  prompt: string
+  threshold: number
+  sourceSpecId: string | undefined
+  sourceAdrId: string | undefined
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface EvalRun {
+  id: string
+  projectId: string
+  criteriaId: string
+  targetType: string
+  targetId: string
+  score: number
+  status: EvalStatus
+  reasoning: string
+  passed: boolean
+  regressionDetected: boolean
+  previousScore: number | undefined
+  createdAt: Date
+  completedAt: Date | undefined
+}
+
+export interface EvalFeedback {
+  id: string
+  runId: string
+  projectId: string
+  verdict: FeedbackVerdict
+  rationale: string
+  submittedBy: string
+  createdAt: Date
+}
+
+// ─── Engineering Goals ────────────────────────────────────────────────────────
+
+export type GoalStatus = "active" | "completed" | "cancelled" | "paused"
+
+export interface GoalTicketRef {
+  ticketId: string
+  title: string
+  status: "open" | "in_progress" | "resolved" | "closed"
+  isBlocker: boolean
+}
+
+export interface Goal {
+  id: string
+  projectId: string
+  title: string
+  description: string
+  status: GoalStatus
+  targetDate: Date | undefined
+  tickets: GoalTicketRef[]
+  progressPercent: number
+  blockers: string[]
+  decomposedAt: Date | undefined
+  decomposedBy: "claude" | "manual"
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface GoalDecomposition {
+  tickets: Array<{
+    title: string
+    description: string
+    type: "feature" | "bug" | "chore" | "spike"
+  }>
+  reasoning: string
+}

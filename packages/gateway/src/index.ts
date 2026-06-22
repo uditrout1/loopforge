@@ -12,6 +12,8 @@ import { createADRRouter, ADRService, createInMemoryADRStore } from "@loopforge/
 import { createVisionRouter, VisionService, createInMemoryVisualAssetStore } from "@loopforge/vision"
 import { createGraphRouter, createInMemoryGraphStore } from "@loopforge/graph"
 import type { GraphStore } from "@loopforge/graph"
+import { createGoalsRouter, createInMemoryGoalStore } from "@loopforge/goals"
+import { createEvalsRouter, createInMemoryEvalStore } from "@loopforge/evals"
 import type { Context, Next } from "hono"
 import { BUILT_IN_PACKS } from "@loopforge/brain"
 import type { BrainStore } from "@loopforge/brain"
@@ -162,6 +164,16 @@ function main() {
   app.use("/vision/*", requireApiKey)
   const visionService = new VisionService(createInMemoryVisualAssetStore(), store, routerConfig, graphStore)
   app.route("/vision", createVisionRouter(visionService))
+
+  // Goals routes
+  app.use("/goals/*", requireApiKey)
+  const goalStore = createInMemoryGoalStore()
+  app.route("/goals", createGoalsRouter(goalStore, routerConfig))
+
+  // Evals routes
+  app.use("/evals/*", requireApiKey)
+  const evalStore = createInMemoryEvalStore()
+  app.route("/evals", createEvalsRouter(evalStore, routerConfig))
 
   // Workflow routes
   app.use("/workflows/*", requireApiKey)

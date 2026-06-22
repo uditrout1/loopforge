@@ -292,6 +292,71 @@ export async function searchGraph(
   return data.nodes;
 }
 
+// ─── Goals ───────────────────────────────────────────────────────────────────
+
+export interface GoalTicketRef {
+  ticketId: string;
+  title: string;
+  status: string;
+  isBlocker: boolean;
+}
+
+export interface GoalData {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  status: string;
+  targetDate?: string;
+  tickets: GoalTicketRef[];
+  progressPercent: number;
+  blockers: string[];
+  decomposedAt?: string;
+  decomposedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getGoals(projectId: string): Promise<GoalData[]> {
+  const r = await fetch(`${GATEWAY_URL}/goals/${projectId}`, { headers: headers() });
+  if (!r.ok) return [];
+  return r.json() as Promise<GoalData[]>;
+}
+
+export async function createGoal(
+  projectId: string,
+  body: { title: string; description: string; targetDate?: string; autoDecompose?: boolean }
+): Promise<GoalData> {
+  const r = await fetch(`${GATEWAY_URL}/goals/${projectId}`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  return r.json() as Promise<GoalData>;
+}
+
+export async function updateGoalTicket(
+  projectId: string,
+  goalId: string,
+  ticketId: string,
+  body: { status: string; isBlocker?: boolean }
+): Promise<GoalData> {
+  const r = await fetch(`${GATEWAY_URL}/goals/${projectId}/${goalId}/tickets/${ticketId}`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  return r.json() as Promise<GoalData>;
+}
+
+export async function redecomposeGoal(projectId: string, goalId: string): Promise<GoalData> {
+  const r = await fetch(`${GATEWAY_URL}/goals/${projectId}/${goalId}/decompose`, {
+    method: "POST",
+    headers: headers(),
+  });
+  return r.json() as Promise<GoalData>;
+}
+
 export async function analyzeFigmaUrl(
   projectId: string,
   url: string,
@@ -304,4 +369,114 @@ export async function analyzeFigmaUrl(
   });
   if (!res.ok) throw new Error(`Failed to analyze Figma URL: ${res.statusText}`);
   return res.json() as Promise<VisualAnalysis>;
+}
+
+// ─── Evals ───────────────────────────────────────────────────────────────────
+
+export interface EvalCriteriaData {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string;
+  type: string;
+  prompt: string;
+  threshold: number;
+  sourceSpecId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EvalRunData {
+  id: string;
+  projectId: string;
+  criteriaId: string;
+  targetType: string;
+  targetId: string;
+  score: number;
+  status: string;
+  reasoning: string;
+  passed: boolean;
+  regressionDetected: boolean;
+  previousScore?: number;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface EvalFeedbackData {
+  id: string;
+  runId: string;
+  verdict: string;
+  rationale: string;
+  submittedBy: string;
+  createdAt: string;
+}
+
+export interface EvalsSummary {
+  totalCriteria: number;
+  totalRuns: number;
+  passRate: number | null;
+  regressions: number;
+}
+
+export async function getEvalCriteria(projectId: string): Promise<EvalCriteriaData[]> {
+  const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/criteria`, { headers: headers() });
+  if (!r.ok) return [];
+  const data = await r.json() as { criteria: EvalCriteriaData[] };
+  return data.criteria;
+}
+
+export async function createEvalCriteria(
+  projectId: string,
+  body: { name: string; description: string; type: string; prompt: string; threshold: number }
+): Promise<EvalCriteriaData> {
+  const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/criteria`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  const data = await r.json() as { criteria: EvalCriteriaData };
+  return data.criteria;
+}
+
+export async function runEval(
+  projectId: string,
+  body: { criteriaId: string; targetType: string; targetId: string; content: string }
+): Promise<EvalRunData> {
+  const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/run`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  const data = await r.json() as { run: EvalRunData };
+  return data.run;
+}
+
+export async function getEvalRuns(projectId: string, criteriaId?: string): Promise<EvalRunData[]> {
+  const url = criteriaId
+    ? `${GATEWAY_URL}/evals/${projectId}/runs?criteriaId=${criteriaId}`
+    : `${GATEWAY_URL}/evals/${projectId}/runs`;
+  const r = await fetch(url, { headers: headers() });
+  if (!r.ok) return [];
+  const data = await r.json() as { runs: EvalRunData[] };
+  return data.runs;
+}
+
+export async function submitEvalFeedback(
+  projectId: string,
+  runId: string,
+  body: { verdict: string; rationale: string; submittedBy: string }
+): Promise<EvalFeedbackData> {
+  const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/runs/${runId}/feedback`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  const data = await r.json() as { feedback: EvalFeedbackData };
+  return data.feedback;
+}
+
+export async function getEvalsSummary(projectId: string): Promise<EvalsSummary | null> {
+  const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/summary`, { headers: headers() });
+  if (!r.ok) return null;
+  return r.json() as Promise<EvalsSummary>;
 }

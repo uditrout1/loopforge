@@ -15,6 +15,8 @@
     { "path": "../spec" },
     { "path": "../adr" },
     { "path": "../vision" },
-    { "path": "../graph" }
+    { "path": "../graph" },
+    { "path": "../goals" },
+    { "path": "../evals" }
   ]
 }
