@@ -47,8 +47,8 @@ LoopForge becomes your system of record for knowledge, decisions, and judgment.
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                        LoopForge Gateway                           │
-│                         (Hono · :18790)                            │
+│                        LoopForge Gateway                          │
+│                         (Hono · :18790)                           │
 ├──────────┬──────────┬──────────┬──────────┬──────────┬────────────┤
 │ Projects │ Sessions │ Backlog  │Workflows │Specs/ADR │   Graph    │
 │  +Packs  │ +Vision  │ +GitHub  │ +Decomp  │+Approval │  Explorer  │
@@ -61,9 +61,9 @@ LoopForge becomes your system of record for knowledge, decisions, and judgment.
                                                │
                                   All write to ↓
                           ┌──────────────────────────┐
-                          │   Knowledge Graph         │
-                          │   (graph_nodes +          │
-                          │    graph_edges)           │
+                          │   Knowledge Graph        │
+                          │   (graph_nodes +         │
+                          │    graph_edges)          │
                           └───────────┬──────────────┘
                                       ↓
                                Supabase + pgvector
