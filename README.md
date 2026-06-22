@@ -1,39 +1,43 @@
-# DevOS
+# LoopForge
+
+**The brain for your project.**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-DevOS is an AI harness for software teams that owns the full software development lifecycle — from idea to production. It is not a coding assistant; it is the operating system your team's AI runs on.
+LoopForge is a **Product Engineering Intelligence** platform — AI that understands your codebase, your specs, your decisions, and now your designs, all in one place. It is not a coding assistant. It is the persistent brain your entire product engineering team thinks through.
 
 ---
 
-## What DevOS Is NOT / What DevOS IS
+## What LoopForge Is NOT / What LoopForge IS
 
 | NOT | IS |
 |---|---|
-| A coding copilot | A full SDLC platform |
+| A coding copilot | A full product engineering intelligence layer |
 | A chat wrapper around an LLM | A persistent project brain with indexed memory |
 | A one-model solution | An intelligent model router (small → frontier, cloud → on-prem) |
 | A task tracker | An AI-maintained backlog with GitHub integration |
 | A script runner | A multi-agent workflow engine |
 | A documentation generator | A spec-driven development system with approval gates |
+| A design viewer | A visual context engine that links designs to code |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    DevOS Gateway                     │
-│                   (Hono · :18790)                    │
-├──────────┬──────────┬──────────┬──────────┬─────────┤
-│ Projects │ Sessions │ Backlog  │ Workflows│  Specs  │
-│  + Packs │ + ADRs   │ + GitHub │ + Decomp │  + ADRs │
-└────┬─────┴────┬─────┴────┬─────┴────┬─────┴────┬────┘
-     │          │          │          │          │
-     ▼          ▼          ▼          ▼          ▼
-  @devos/   @devos/   @devos/   @devos/   @devos/
-   brain    router    backlog  workflows   spec/adr
-     │          │
+┌──────────────────────────────────────────────────────────┐
+│                   LoopForge Gateway                       │
+│                    (Hono · :18790)                        │
+├──────────┬──────────┬──────────┬──────────┬──────────────┤
+│ Projects │ Sessions │ Backlog  │ Workflows│ Specs / ADRs │
+│  + Packs │ + Vision │ + GitHub │ + Decomp │  + Approval  │
+└────┬─────┴────┬─────┴────┬─────┴────┬─────┴──────┬───────┘
+     │          │          │          │             │
+     ▼          ▼          ▼          ▼             ▼
+  @devos/   @devos/   @devos/   @devos/        @devos/
+   brain    router    backlog  workflows       spec/adr
+     │          │          │
+     │          │          └── @devos/vision
      ├──────────┤
      ▼          ▼
   Supabase   OpenRouter
@@ -52,11 +56,12 @@ DevOS is an AI harness for software teams that owns the full software developmen
 | `@devos/backlog` | GitHub Issues integration, ticket classification, AI prioritization |
 | `@devos/adr` | Architecture Decision Record extraction and storage |
 | `@devos/spec` | PRD, architecture doc, and technical spec generation with approval workflows |
+| `@devos/vision` | Visual Context Engine — screenshots, Figma, wireframes linked to code |
 | `@devos/db` | Supabase persistence adapter (pgvector for embeddings) |
 | `@devos/gateway` | Hono HTTP gateway (port 18790), all routes, auth middleware |
-| `apps/ui` | Next.js 15 developer UI — chat, skill browser, pack selector, cost dashboard |
+| `apps/ui` | Next.js 15 developer UI — chat, skill browser, pack selector, cost dashboard, visual analysis |
 
-**Package dependency order:** `core` ← `brain`, `router`, `skills`, `backlog`, `adr`, `spec` ← `workflows` ← `gateway`
+**Package dependency order:** `core` ← `brain`, `router`, `skills`, `backlog`, `adr`, `spec`, `vision` ← `workflows` ← `gateway`
 
 ---
 
@@ -72,6 +77,11 @@ DevOS is an AI harness for software teams that owns the full software developmen
 - **Context Packs** — curated context slices per task type (auth, database, API, UI, etc.) loaded at session start via `packId`
 - **Capability Gap Advisor** — surfaces expertise gaps proactively (security, a11y, performance, testing, architecture, docs)
 - **8 built-in skills** — `debug`, `security-audit`, `code-review`, `test-generation`, `ui-fix`, `plan-feature`, `explain`, `changelog`
+
+### Design
+- **Visual Context Engine** — upload a screenshot or paste a Figma URL; LoopForge analyzes UX issues, accessibility gaps, and copy problems, then links findings directly to source files
+- **Design-to-code linking** — component names detected in visual analysis are matched against indexed code chunks, so you see exactly which files to change
+- **Multimodal sessions** — attach images directly to session messages; the frontier model reasons over code and visual context together
 
 ### Review
 - **Multi-Agent Workflows** — PR review, bug investigation, release prep, nightly security scan
@@ -93,7 +103,7 @@ DevOS is an AI harness for software teams that owns the full software developmen
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-org/devos && cd devos && pnpm install
+git clone https://github.com/uditrout1/devos && cd devos && pnpm install
 
 # 2. Configure
 cp .env.example .env
@@ -116,13 +126,18 @@ curl -X POST http://localhost:18790/projects \
 curl -X POST http://localhost:18790/sessions \
   -H "Content-Type: application/json" \
   -d '{"projectId": "<id>", "packId": "auth"}'
+
+# Analyze a screenshot
+curl -X POST http://localhost:18790/vision/<projectId>/screenshot \
+  -H "Content-Type: application/json" \
+  -d '{"name": "checkout flow", "base64": "<base64>", "mediaType": "image/png", "question": "What UX issues do you see?"}'
 ```
 
 ---
 
 ## API Reference
 
-All routes under `/projects/*`, `/sessions/*`, `/backlog/*`, `/workflows/*`, `/adrs/*`, `/specs/*`, `/decompose/*` require `X-API-Key: <DEVOS_API_KEY>` when `HOST != 127.0.0.1`.
+All routes require `X-API-Key: <DEVOS_API_KEY>` when `HOST != 127.0.0.1`.
 
 | Method | Route | Description |
 |---|---|---|
@@ -138,6 +153,10 @@ All routes under `/projects/*`, `/sessions/*`, `/backlog/*`, `/workflows/*`, `/a
 | `POST` | `/workflows/:id/runs` | Start a workflow run |
 | `GET` | `/backlog/tickets/:projectId` | Prioritized ticket list |
 | `POST` | `/backlog/webhook/github` | GitHub webhook receiver |
+| `POST` | `/vision/:projectId/screenshot` | Analyze a screenshot → structured UX + a11y + code feedback |
+| `POST` | `/vision/:projectId/figma` | Analyze a Figma URL |
+| `POST` | `/vision/:projectId/assets/:id/ask` | Follow-up question on an existing visual asset |
+| `GET` | `/vision/:projectId/assets` | List visual assets for a project |
 
 ---
 
@@ -219,14 +238,15 @@ For confidential/restricted workloads, omit `OPENROUTER_API_KEY` — all request
 - [x] Spec-driven development (PRD / architecture / technical spec + approval)
 - [x] Supabase persistence + pgvector semantic search
 - [x] Next.js 15 developer UI
+- [x] Visual Context Engine — screenshots, Figma URLs, design-to-code linking, UX/a11y analysis
 
 ### Coming
-- [ ] **Visual Context Engine** — understands screenshots, Figma designs, and wireframes; attaches visual context to sessions automatically
 - [ ] Workflow marketplace — community-contributed workflow definitions
 - [ ] Slack / email feedback ingestion into backlog
 - [ ] PR review workflow with security scoring and staged rollout gate
 - [ ] Workflow visual builder (drag-and-drop agent graph)
-- [ ] MCP server mode — expose DevOS as an MCP server to any compatible client
+- [ ] MCP server mode — expose LoopForge as an MCP server to any compatible client
+- [ ] Figma API integration — pull component trees directly without screenshots
 
 ---
 
@@ -243,4 +263,4 @@ Have a feature idea? [Start a discussion](../../discussions).
 
 Apache 2.0 — see [LICENSE](LICENSE).
 
-Built by the DevOS contributors. Inspired by [OpenClaw](https://github.com/openclaw/openclaw).
+Built by the LoopForge contributors.

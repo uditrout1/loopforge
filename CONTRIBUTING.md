@@ -1,6 +1,6 @@
-# Contributing to DevOS
+# Contributing to LoopForge
 
-This document covers development setup, conventions, and how to extend DevOS with new skills, workflows, context packs, and spec generators.
+This document covers development setup, conventions, and how to extend LoopForge with new skills, workflows, context packs, and spec generators.
 
 ---
 
@@ -14,7 +14,7 @@ This document covers development setup, conventions, and how to extend DevOS wit
 ### Clone and install
 
 ```bash
-git clone https://github.com/your-org/devos
+git clone https://github.com/uditrout1/devos
 cd devos
 pnpm install
 ```
@@ -174,7 +174,7 @@ Packs are selected at session creation via `packId`. The brain loader uses the p
 
 ## Adding a Spec Generator
 
-Spec generators live in `packages/spec/src/generators/`. DevOS ships generators for PRDs, architecture docs, and technical specs.
+Spec generators live in `packages/spec/src/generators/`. LoopForge ships generators for PRDs, architecture docs, and technical specs.
 
 1. Create `packages/spec/src/generators/<type>.ts`
 2. Implement the `SpecGenerator` interface (type in `@devos/core`):
@@ -232,7 +232,7 @@ Use the [bug report template](../../issues/new?template=bug_report.md). Include:
 - What you did
 - What you expected
 - What actually happened
-- DevOS version and Node.js version
+- LoopForge version and Node.js version
 
 ---
 
