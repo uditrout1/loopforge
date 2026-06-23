@@ -85,13 +85,14 @@ LoopForge becomes your system of record for knowledge, decisions, and judgment.
 | `@loopforge/graph` | Product Engineering Knowledge Graph — lineage, impact analysis, traceability |
 | `@loopforge/evals` | Eval Engine — converts requirements and standards into executable quality criteria; AI scoring, human feedback, regression detection |
 | `@loopforge/goals` | Engineering Goals — Claude decomposes high-level goals into tickets, tracks progress, surfaces blockers |
-| `@loopforge/db` | Supabase persistence adapter (pgvector for embeddings) |
-| `@loopforge/gateway` | Hono HTTP gateway (port 18790), all routes, auth middleware |
-| `apps/ui` | Next.js 15 developer UI — Vibe Coder wizard, chat, skill browser, pack selector, graph explorer, goals, evals, cost dashboard |
+| `@loopforge/events` | Typed in-process event bus — `LoopForgeEventMap` covering project, graph, ADR, eval, goal, release, and scan events |
+| `@loopforge/db` | Supabase persistence adapter — write-through stores for projects, graph, ADRs, evals, goals; `createPersistentProjectsMap` Proxy |
+| `@loopforge/gateway` | Hono HTTP gateway (port 18790), all routes, auth middleware, file browser API |
+| `apps/ui` | Next.js 15 developer UI — Knowledge/Editor/Judgment/Execution/Visual/Governance nav, Monaco code editor, graph explorer, goals, evals |
 
 **Package dependency order:**
 ```
-core ← brain, router, skills, backlog, adr, spec, vision, graph, evals, goals ← workflows ← gateway
+core ← brain, router, skills, backlog, adr, spec, vision, graph, evals, goals, events ← workflows ← gateway
 ```
 
 ---
@@ -109,6 +110,7 @@ core ← brain, router, skills, backlog, adr, spec, vision, graph, evals, goals 
 - **Context Packs** — curated context slices per task type (auth, database, API, UI, etc.) loaded at session start via `packId`
 - **Capability Gap Advisor** — surfaces expertise gaps proactively (security, a11y, performance, testing, architecture, docs)
 - **8 built-in skills** — `debug`, `security-audit`, `code-review`, `test-generation`, `ui-fix`, `plan-feature`, `explain`, `changelog`
+- **Monaco Code Editor** — in-browser editor with file tree, language detection for 20+ extensions, dirty-state indicator, Cmd+S save; backed by a secure file API with symlink traversal protection
 
 ### Design
 - **Visual Context Engine** — upload a screenshot or paste a Figma URL; LoopForge analyzes UX issues, accessibility gaps, and copy problems, then links findings directly to source files
@@ -128,7 +130,9 @@ core ← brain, router, skills, backlog, adr, spec, vision, graph, evals, goals 
 - **GitHub Webhook** — live ticket sync on push/PR events via `POST /backlog/webhook/github`
 
 ### Learn
-- **Product Engineering Knowledge Graph** — traversable graph connecting PRDs, requirements, specs, ADRs, code files, tickets, PRs, evaluations, and visual assets. Answer: "What breaks if this requirement changes?", "Which ADR approved this service?", "What led to this code existing?"
+- **Product Engineering Knowledge Graph** — traversable graph connecting PRDs, requirements, specs, ADRs, code files, tickets, PRs, evaluations, eval runs, and releases. Answer: "What breaks if this requirement changes?", "Which ADR approved this service?", "Did this eval pass after the last release?"
+- **Full Traceability Chain** — `requirement → spec → ADR → evaluation → eval_run`; `ticket → pull_request → release`; `doc → module (IMPACTS)`; all edges stored with confidence scores and metadata
+- **Graph Node Detail** — click any node to see its preview content, source doc, and all edges with linked-node titles; click-to-navigate to any connected node
 - **ADR Store** — all architectural decisions queryable and exportable per project
 - **Cost Dashboard** — token usage and cost breakdown by session, project, and model in the UI
 
@@ -278,6 +282,14 @@ All routes require `X-API-Key: <LOOPFORGE_API_KEY>` when `HOST != 127.0.0.1`.
 | `POST` | `/vision/:projectId/assets/:id/ask` | Follow-up question on an existing visual asset |
 | `GET` | `/vision/:projectId/assets` | List visual assets for a project |
 
+### File Browser (Editor API)
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/projects/:id/files` | Directory tree (depth 1–6, skips `node_modules`, `.git`, `dist`, etc.) |
+| `GET` | `/projects/:id/files/content?path=<rel>` | Read file content (≤500 KB, symlinks rejected) |
+| `PUT` | `/projects/:id/files/content` | Write file content `{ path, content }` (≤500 KB, symlinks rejected, `realpath`-validated) |
+
 ---
 
 ## Environment Variables
@@ -294,9 +306,9 @@ LOOPFORGE_API_KEY=          # Required when HOST != 127.0.0.1
 ALLOWED_REPO_ROOTS=         # Colon-separated allowed repo paths
 CORS_ORIGINS=               # Comma-separated allowed origins
 
-# Persistence
-SUPABASE_URL=               # pgvector-backed persistence (production)
-SUPABASE_SERVICE_ROLE_KEY=
+# Persistence (Supabase — all lf_* tables, RLS disabled, gateway is sole writer)
+SUPABASE_URL=               # https://<project>.supabase.co
+SUPABASE_ANON_KEY=          # Publishable key (sb_publishable_…)
 
 # GitHub integration
 GITHUB_WEBHOOK_SECRET=      # For GitHub webhook verification
@@ -321,7 +333,7 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       OLLAMA_BASE_URL: http://ollama:11434
       SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
 
   ollama:
@@ -364,10 +376,16 @@ For confidential/restricted workloads, omit `OPENROUTER_API_KEY` — all request
 - [x] Engineering Goals — Claude decomposes goals into tickets, progress tracking, blocker surfacing
 - [x] Vibe Coder wizard — start from scratch with BRD/FRD/PRD templates + AI fill; or connect an existing repo
 
-- [x] Doc scanner — auto-ingests `CLAUDE.md`, `PRD.md`, `BRD.md`, `README.md`, `adr/*.md` into knowledge graph on repo connect
+- [x] Doc scanner — auto-ingests `CLAUDE.md`, `PRD.md`, `BRD.md`, `README.md`, `adr/*.md` into knowledge graph on repo connect; extended to also match `product.md`, `requirements.md`
 - [x] Settings page — model selection per tier (small/medium/frontier), workflow toggles, on-prem routing, cost limits
 - [x] Model pin API — `GET/PUT /settings`, `GET /settings/models/available`, RouterConfig `modelOverrides`
-- [x] Releases — AI changelog generation, draft → publish flow, PR + ticket tagging
+- [x] Releases — AI changelog generation, draft → publish flow, PR + ticket tagging; published releases ingested into knowledge graph (`INCLUDED_IN` edges from tickets + PRs)
+- [x] **Monaco Code Editor** — in-browser editor (Editor tab), file tree sidebar, language detection, Cmd+S save, dirty-state indicator
+- [x] **File Browser API** — `GET/PUT /projects/:id/files/content` with `realpath`-based symlink traversal protection
+- [x] **Full Traceability Chain** — eval criteria, eval runs, and releases all written to graph; `requirement→module IMPACTS` edges via keyword matching; graph node detail shows titles + clickable edges
+- [x] **`@loopforge/events`** — typed in-process event bus (`LoopForgeEventMap`) for future reactive integrations
+- [x] **Supabase write-through persistence** — `createPersistentProjectsMap` Proxy + Supabase stores for graph, ADRs, evals, goals; no data loss on gateway restart
+- [x] **V2 navigation** — renamed tabs: Knowledge / Editor / Judgment / Execution / Visual / Governance
 
 ### In Progress
 - [ ] **Deep repo analysis** — code-scan for repos without docs, generate draft BRD/FRD/PRD with human approval gate before graph ingestion
