@@ -9,11 +9,12 @@ interface PageProps {
 }
 
 const NAV_LINKS = [
-  { href: "/graph",    label: "Knowledge graph" },
-  { href: "/vision",   label: "Visual analysis" },
-  { href: "/evals",    label: "Evals"           },
-  { href: "/goals",    label: "Goals"            },
-  { href: "/releases", label: "Releases"         },
+  { href: "/graph",    label: "Knowledge"  },
+  { href: "/editor",   label: "Editor"     },
+  { href: "/evals",    label: "Judgment"   },
+  { href: "/goals",    label: "Execution"  },
+  { href: "/vision",   label: "Visual"     },
+  { href: "/releases", label: "Governance" },
 ];
 
 export default function ProjectPage({ params }: PageProps) {

@@ -1,6 +1,20 @@
 import { randomUUID } from "node:crypto"
-import type { Spec, ADR, Ticket, VisualAsset, GraphNode, GraphEdge, GraphRelationship } from "@loopforge/core"
+import type { Spec, ADR, Ticket, VisualAsset, GraphNode, GraphEdge, GraphRelationship, EvalCriteria, EvalRun } from "@loopforge/core"
 import type { GraphStore } from "./store.js"
+
+// Minimal release shape — avoids circular dep with @loopforge/db
+export interface IngestableRelease {
+  id: string
+  projectId: string
+  version: string
+  name: string
+  status: string
+  changelog: string
+  mergedPrIds: string[]
+  resolvedTicketIds: string[]
+  publishedAt: Date | undefined
+  createdAt: Date
+}
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -245,6 +259,135 @@ export async function ingestFileIndex(
     if (filePaths.length > 500 && i + CHUNK_SIZE < filePaths.length) {
       await new Promise<void>((resolve) => setImmediate(resolve))
     }
+  }
+}
+
+// ── Eval criteria → graph ─────────────────────────────────────────────────────
+// evaluation node VALIDATES the source spec/ADR/requirement it tests
+
+export async function ingestEvalCriteria(criteria: EvalCriteria, store: GraphStore): Promise<void> {
+  const nodeId = `evaluation:${criteria.id}`
+
+  await store.upsertNode(makeNode(
+    criteria.projectId,
+    nodeId,
+    "evaluation",
+    criteria.name,
+    {
+      type: criteria.type,
+      description: criteria.description,
+      threshold: criteria.threshold,
+      prompt: criteria.prompt.slice(0, 300),
+    },
+    "evals",
+    criteria.id,
+  ))
+
+  // VALIDATES → source spec
+  if (criteria.sourceSpecId !== undefined) {
+    await store.upsertEdge(makeEdge(
+      criteria.projectId, nodeId, `spec:${criteria.sourceSpecId}`, "VALIDATES", 0.95,
+      { criteriaType: criteria.type },
+    ))
+  }
+
+  // VALIDATES → source ADR
+  if (criteria.sourceAdrId !== undefined) {
+    await store.upsertEdge(makeEdge(
+      criteria.projectId, nodeId, `adr:${criteria.sourceAdrId}`, "VALIDATES", 0.95,
+      { criteriaType: criteria.type },
+    ))
+  }
+}
+
+// ── Eval run → graph ──────────────────────────────────────────────────────────
+// eval_run SCORES its parent evaluation node
+
+export async function ingestEvalRun(run: EvalRun, store: GraphStore): Promise<void> {
+  const nodeId = `eval_run:${run.id}`
+  const criteriaNodeId = `evaluation:${run.criteriaId}`
+
+  await store.upsertNode(makeNode(
+    run.projectId,
+    nodeId,
+    "eval_run",
+    `Run ${run.id.slice(0, 8)} — score ${run.score}`,
+    {
+      status: run.status,
+      score: run.score,
+      passed: run.passed,
+      regressionDetected: run.regressionDetected,
+      targetType: run.targetType,
+      targetId: run.targetId,
+      reasoning: run.reasoning.slice(0, 300),
+    },
+    "evals",
+    run.id,
+  ))
+
+  // SCORES → evaluation (criteria) node
+  await store.upsertEdge(makeEdge(
+    run.projectId, nodeId, criteriaNodeId, "SCORES", 1.0,
+    { score: run.score, passed: run.passed },
+  ))
+
+  // If target is a spec/requirement/file, also wire VALIDATED_BY edge
+  if (run.targetId) {
+    const targetNodeId = run.targetType
+      ? `${run.targetType}:${run.targetId}`
+      : `spec:${run.targetId}`
+    await store.upsertEdge(makeEdge(
+      run.projectId, criteriaNodeId, targetNodeId, "VALIDATED_BY", 0.9,
+      { latestScore: run.score, passed: run.passed },
+    ))
+  }
+}
+
+// ── Release → graph ───────────────────────────────────────────────────────────
+// release node groups tickets + PRs that shipped in it
+
+export async function ingestRelease(release: IngestableRelease, store: GraphStore): Promise<void> {
+  const nodeId = `release:${release.id}`
+
+  await store.upsertNode(makeNode(
+    release.projectId,
+    nodeId,
+    "release",
+    `${release.version}${release.name ? ` — ${release.name}` : ""}`,
+    {
+      version: release.version,
+      status: release.status,
+      changelog: release.changelog.slice(0, 400),
+      prCount: release.mergedPrIds.length,
+      ticketCount: release.resolvedTicketIds.length,
+      publishedAt: release.publishedAt?.toISOString(),
+    },
+    "releases",
+    release.id,
+  ))
+
+  // Resolved tickets INCLUDED_IN this release
+  for (const ticketId of release.resolvedTicketIds) {
+    await store.upsertEdge(makeEdge(
+      release.projectId, `ticket:${ticketId}`, nodeId, "INCLUDED_IN", 1.0,
+      { version: release.version },
+    ))
+  }
+
+  // Merged PRs INCLUDED_IN this release
+  for (const prId of release.mergedPrIds) {
+    const prNodeId = `pull_request:${prId}`
+    const existing = await store.getNode(release.projectId, prNodeId)
+    if (existing === null) {
+      await store.upsertNode(makeNode(
+        release.projectId, prNodeId, "pull_request", `PR #${prId}`,
+        {}, "manual", prId,
+      ))
+    }
+    await store.upsertEdge(makeEdge(
+      release.projectId, prNodeId, nodeId, "INCLUDED_IN", 1.0,
+      { version: release.version },
+    ))
   }
 }
 

@@ -140,6 +140,64 @@ export async function ingestScannedDocs(
     }
   }
 
+  // ── Pass 5: requirement → IMPACTS → module (keyword overlap) ────────────────
+  // Gives "Impact" traversal something to follow from requirement nodes.
+  {
+    const reqNodes: GraphNode[] = []
+    const modNodes: GraphNode[] = []
+
+    // collect req + module nodes created in passes 2 & 3
+    for (const doc of docs) {
+      if (!["prd", "brd", "frd", "claude_md"].includes(doc.type)) continue
+      const parentEntityType: GraphEntityType = ENTITY_TYPE_MAP[doc.type] ?? "spec"
+      const parentNodeId = makeNodeId(parentEntityType, doc.relPath)
+
+      const reqLines = doc.content
+        .split("\n")
+        .filter(l => /^[-*]\s+.{10,}/.test(l) || /^#{2,3}\s+.{5,}/.test(l))
+        .slice(0, 15)
+
+      for (const line of reqLines) {
+        const text = line.replace(/^[-*#\s]+/, "").trim()
+        if (text.length < 10) continue
+        const reqId = `requirement:${doc.relPath}-${Buffer.from(text).toString("base64").slice(0, 12)}`
+        reqNodes.push({ id: reqId, projectId, entityType: "requirement", title: text.slice(0, 120), metadata: { sourceDoc: doc.relPath }, sourceSystem: "doc-scanner", sourceId: reqId, createdAt: now, updatedAt: now })
+      }
+    }
+
+    for (const doc of docs) {
+      if (!["readme", "brd", "spec"].includes(doc.type)) continue
+      for (const heading of extractHeadings(doc.content)) {
+        const moduleId = `module:${doc.relPath}-${Buffer.from(heading).toString("base64").slice(0, 10)}`
+        modNodes.push({ id: moduleId, projectId, entityType: "module", title: heading, metadata: { sourceDoc: doc.relPath }, sourceSystem: "doc-scanner", sourceId: moduleId, createdAt: now, updatedAt: now })
+      }
+    }
+
+    function tokenize(s: string): Set<string> {
+      return new Set(s.toLowerCase().split(/[\s\-_/]+/).filter(w => w.length > 3))
+    }
+
+    for (const req of reqNodes) {
+      const reqTokens = tokenize(req.title)
+      for (const mod of modNodes) {
+        const modTokens = tokenize(mod.title)
+        const overlap = [...reqTokens].filter(t => modTokens.has(t)).length
+        if (overlap === 0) continue
+        const confidence = Math.min(0.5 + overlap * 0.15, 0.95)
+        await store.upsertEdge({
+          id: `IMPACTS:${req.id}:${mod.id}`,
+          projectId,
+          sourceNodeId: req.id,
+          targetNodeId: mod.id,
+          relationship: "IMPACTS",
+          confidence,
+          metadata: { overlapCount: overlap },
+          createdAt: now,
+        })
+      }
+    }
+  }
+
   // ── Pass 4: cross-doc edges ─────────────────────────────────────────────────
   // Find the primary spec document (prd or claude_md)
   const primaryPrdId = nodeIdByType["prd"] ?? nodeIdByType["claude_md"]

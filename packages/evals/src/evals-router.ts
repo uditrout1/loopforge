@@ -3,6 +3,8 @@ import type { Context } from "hono"
 import { randomUUID } from "node:crypto"
 import type { EvalType, FeedbackVerdict, Project } from "@loopforge/core"
 import type { RouterConfig } from "@loopforge/router"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestEvalCriteria, ingestEvalRun } from "@loopforge/graph"
 import type { EvalStore } from "./store.js"
 import { runEval } from "./runner.js"
 import { submitFeedback } from "./feedback.js"
@@ -18,6 +20,7 @@ export function createEvalsRouter(
   store: EvalStore,
   routerConfig: RouterConfig,
   projectsMap?: Map<string, Project>,
+  graphStore?: GraphStore,
 ): Hono {
   const app = new Hono()
 
@@ -60,6 +63,7 @@ export function createEvalsRouter(
       updatedAt: now,
     }
     await store.saveCriteria(criteria)
+    if (graphStore) ingestEvalCriteria(criteria, graphStore).catch(() => {})
     return c.json({ criteria }, 201)
   })
 
@@ -89,6 +93,7 @@ export function createEvalsRouter(
     if (!criteria) return c.json({ error: "Criteria not found" }, 404)
 
     const run = await runEval(projectId, criteria, body.content, store, routerConfig)
+    if (graphStore) ingestEvalRun(run, graphStore).catch(() => {})
     return c.json({ run }, 201)
   })
 

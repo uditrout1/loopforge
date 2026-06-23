@@ -4,7 +4,7 @@ import type { ScannedDoc, ScannedDocType } from "@loopforge/core"
 
 const DOC_PATTERNS: Array<{ test: (name: string, rel: string) => boolean; type: ScannedDocType }> = [
   { test: (n) => /^claude\.md$/i.test(n), type: "claude_md" },
-  { test: (n) => /^prd\.md$/i.test(n) || /product.requirements/i.test(n), type: "prd" },
+  { test: (n) => /^prd\.md$/i.test(n) || /^product\.md$/i.test(n) || /product.requirements/i.test(n) || /^requirements\.md$/i.test(n), type: "prd" },
   { test: (n) => /^brd\.md$/i.test(n) || /business.requirements/i.test(n), type: "brd" },
   { test: (n) => /^frd\.md$/i.test(n) || /functional.requirements/i.test(n), type: "frd" },
   { test: (n, rel) => /adr/i.test(rel) && extname(n) === ".md", type: "adr" },

@@ -635,3 +635,53 @@ export async function updateRelease(
   });
   return r.json() as Promise<ReleaseData>;
 }
+
+// ── File editor ───────────────────────────────────────────────────────────────
+
+export interface FileTreeEntry {
+  name: string;
+  path: string;
+  type: "file" | "dir";
+  children?: FileTreeEntry[];
+  size?: number;
+}
+
+export async function getFileTree(
+  projectId: string,
+  depth = 4
+): Promise<{ tree: FileTreeEntry[]; repoPath: string }> {
+  const r = await fetch(
+    `${GATEWAY_URL}/projects/${projectId}/files?depth=${depth}`,
+    { headers: headers() }
+  );
+  if (!r.ok) throw new Error(`Failed to fetch file tree: ${r.statusText}`);
+  return r.json() as Promise<{ tree: FileTreeEntry[]; repoPath: string }>;
+}
+
+export async function getFileContent(
+  projectId: string,
+  path: string
+): Promise<{ path: string; content: string; size: number }> {
+  const r = await fetch(
+    `${GATEWAY_URL}/projects/${projectId}/files/content?path=${encodeURIComponent(path)}`,
+    { headers: headers() }
+  );
+  if (!r.ok) throw new Error(`Failed to read file: ${r.statusText}`);
+  return r.json() as Promise<{ path: string; content: string; size: number }>;
+}
+
+export async function saveFileContent(
+  projectId: string,
+  path: string,
+  content: string
+): Promise<void> {
+  const r = await fetch(
+    `${GATEWAY_URL}/projects/${projectId}/files/content`,
+    {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify({ path, content }),
+    }
+  );
+  if (!r.ok) throw new Error(`Failed to save file: ${r.statusText}`);
+}

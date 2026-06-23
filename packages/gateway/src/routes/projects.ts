@@ -42,9 +42,12 @@ function validateRepoPath(raw: string): string {
   return resolved
 }
 
-const projects = new Map<string, Project>()
-
-export function createProjectsRouter(store?: BrainStore, graphStore?: GraphStore) {
+export function createProjectsRouter(
+  store?: BrainStore,
+  graphStore?: GraphStore,
+  externalMap?: Map<string, Project>,
+) {
+  const projects = externalMap ?? new Map<string, Project>()
   const app = new Hono()
 
   app.post("/", async (c) => {

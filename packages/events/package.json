@@ -1,5 +1,5 @@
 {
-  "name": "@loopforge/evals",
+  "name": "@loopforge/events",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,16 +7,15 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@loopforge/core": "workspace:*",
-    "@loopforge/graph": "workspace:*",
-    "@loopforge/router": "workspace:*",
-    "hono": "^4.0.0"
+    "@loopforge/core": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "@types/node": "*",
+    "typescript": "*"
   }
 }

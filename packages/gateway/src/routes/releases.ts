@@ -3,6 +3,8 @@ import type { Context } from "hono"
 import { randomUUID } from "node:crypto"
 import { route } from "@loopforge/router"
 import type { RouterConfig } from "@loopforge/router"
+import type { GraphStore } from "@loopforge/graph"
+import { ingestRelease } from "@loopforge/graph"
 
 export interface Release {
   id: string
@@ -23,7 +25,7 @@ function requireParam(c: Context, name: string): string | null {
   return val ?? null
 }
 
-export function createReleasesRouter(routerConfig: RouterConfig): Hono {
+export function createReleasesRouter(routerConfig: RouterConfig, graphStore?: GraphStore): Hono {
   const app = new Hono()
   const releases = new Map<string, Release>()
 
@@ -140,6 +142,20 @@ Rules:
     release.status = "published"
     release.publishedAt = new Date()
     releases.set(key, release)
+    if (graphStore) {
+      ingestRelease({
+        id: release.id,
+        projectId: release.projectId,
+        version: release.version,
+        name: release.name,
+        status: release.status,
+        changelog: release.changelog,
+        mergedPrIds: release.mergedPrIds,
+        resolvedTicketIds: release.resolvedTicketIds,
+        publishedAt: release.publishedAt,
+        createdAt: release.createdAt,
+      }, graphStore).catch(() => {})
+    }
     return c.json(release)
   })
 

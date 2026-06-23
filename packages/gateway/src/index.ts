@@ -15,24 +15,28 @@ import type { GraphStore } from "@loopforge/graph"
 import { createGoalsRouter, createInMemoryGoalStore } from "@loopforge/goals"
 import { createEvalsRouter, createInMemoryEvalStore } from "@loopforge/evals"
 import { createSettingsRouter, getSettings } from "./routes/settings.js"
+import { createFilesRouter } from "./routes/files.js"
 import { createReleasesRouter } from "./routes/releases.js"
 import type { Context, Next } from "hono"
 import { BUILT_IN_PACKS } from "@loopforge/brain"
 import type { BrainStore } from "@loopforge/brain"
 import type { Project, Ticket, ContextChunk, ContextPack } from "@loopforge/core"
+import {
+  createSupabaseClient,
+  createPersistentProjectsMap,
+  createSupabaseGraphStore,
+  createSupabaseADRStore,
+  createSupabaseEvalStore,
+  createSupabaseGoalStore,
+} from "@loopforge/db"
 
 const PORT = Number(process.env["PORT"] ?? 18790)
 
-// Fix 3a: API key auth.
-// Set LOOPFORGE_API_KEY in the environment. All /projects and /sessions routes
-// require "Authorization: Bearer <key>" or "X-API-Key: <key>".
-// If no key is set the server refuses to start unless HOST is 127.0.0.1.
 const LOOPFORGE_API_KEY = process.env["LOOPFORGE_API_KEY"]
 const HOST = process.env["HOST"] ?? "127.0.0.1"
 
 async function requireApiKey(c: Context, next: Next): Promise<Response | void> {
   if (!LOOPFORGE_API_KEY) {
-    // No key configured — traffic is allowed only from localhost
     const forwarded = c.req.header("x-forwarded-for")
     if (forwarded) {
       return c.json(
@@ -55,8 +59,6 @@ async function requireApiKey(c: Context, next: Next): Promise<Response | void> {
   return next()
 }
 
-// Fix 3b: CORS restricted to localhost origins by default.
-// Override with CORS_ORIGINS="http://app.example.com,..." for production.
 const ALLOWED_ORIGINS = process.env["CORS_ORIGINS"]?.split(",").map((o) => o.trim()) ?? [
   "http://localhost:3000",
   "http://localhost:18790",
@@ -80,7 +82,6 @@ function createInMemoryBrainStore(projectsMap: Map<string, Project>): BrainStore
       summaries.set(projectId, summary)
     },
     async getPacks(projectId) {
-      // Custom packs are stored per-project; built-ins are always included
       const custom = packsStore.get(projectId) ?? []
       return [...BUILT_IN_PACKS, ...custom]
     },
@@ -98,12 +99,33 @@ function createInMemoryBrainStore(projectsMap: Map<string, Project>): BrainStore
   }
 }
 
-function main() {
+async function main() {
   if (!LOOPFORGE_API_KEY && HOST !== "127.0.0.1" && HOST !== "localhost") {
     console.error(
       "[security] LOOPFORGE_API_KEY must be set when HOST is not 127.0.0.1. Refusing to start.",
     )
     process.exit(1)
+  }
+
+  // ── Persistence: Supabase when env vars present, in-memory fallback ──────────
+
+  const supabaseUrl = process.env["SUPABASE_URL"]
+  const supabaseKey = process.env["SUPABASE_ANON_KEY"]
+  const usePersistence = supabaseUrl !== undefined && supabaseKey !== undefined
+
+  let projectsStore: Map<string, Project>
+  let graphStore: GraphStore
+
+  if (usePersistence) {
+    console.log("[db] Supabase persistence enabled")
+    const db = createSupabaseClient(supabaseUrl, supabaseKey)
+    projectsStore = await createPersistentProjectsMap(db)
+    graphStore = createSupabaseGraphStore(db)
+    console.log(`[db] Loaded ${projectsStore.size} project(s) from Supabase`)
+  } else {
+    console.log("[db] No SUPABASE_URL/SUPABASE_ANON_KEY — using in-memory stores")
+    projectsStore = new Map<string, Project>()
+    graphStore = createInMemoryGraphStore()
   }
 
   const app = new Hono()
@@ -129,69 +151,87 @@ function main() {
     },
   }
 
-  // Graph store (shared singleton — declared early so projects router can use it)
-  const graphStore: GraphStore = createInMemoryGraphStore()
+  // ── Projects + Brain ──────────────────────────────────────────────────────────
 
-  // First pass: get the projectsStore map reference (no brain store yet)
-  const { projectsStore } = createProjectsRouter(undefined, graphStore)
-  // Create the brain store wrapping the projects map
   const store = createInMemoryBrainStore(projectsStore)
-  // Second pass: create the router with both stores wired in
-  const { router: projectsRouter } = createProjectsRouter(store, graphStore)
+  const { router: projectsRouter } = createProjectsRouter(store, graphStore, projectsStore)
 
-  // ADR store and service (created early so sessions router can reference it)
-  const adrStore = createInMemoryADRStore()
+  // ── ADR ───────────────────────────────────────────────────────────────────────
+
+  const adrStore = usePersistence
+    ? createSupabaseADRStore(createSupabaseClient(supabaseUrl!, supabaseKey!))
+    : createInMemoryADRStore()
   const adrService = new ADRService(adrStore, routerConfig, graphStore)
 
   app.route("/projects", projectsRouter)
   app.route("/sessions", createSessionsRouter(store, routerConfig, adrService))
 
-  // Backlog routes
+  // ── Backlog ───────────────────────────────────────────────────────────────────
+
   app.use("/backlog/*", requireApiKey)
   const backlogService = new BacklogService(createInMemoryTicketStore(), graphStore)
   const webhookSecret = process.env["GITHUB_WEBHOOK_SECRET"]
   app.route("/backlog", createBacklogRouter(backlogService, webhookSecret))
 
-  // Decompose routes
+  // ── Decompose ─────────────────────────────────────────────────────────────────
+
   app.use("/decompose/*", requireApiKey)
   app.route("/decompose", createDecomposeRouter(store, backlogService, routerConfig))
 
-  // Spec routes
+  // ── Specs ─────────────────────────────────────────────────────────────────────
+
   app.use("/specs/*", requireApiKey)
   app.route("/specs", createSpecRouter(createInMemorySpecStore(), routerConfig, graphStore))
 
-  // ADR routes
+  // ── ADRs ──────────────────────────────────────────────────────────────────────
+
   app.use("/adrs/*", requireApiKey)
   app.route("/adrs", createADRRouter(adrService))
 
-  // Graph routes
+  // ── Graph ─────────────────────────────────────────────────────────────────────
+
   app.use("/graph/*", requireApiKey)
   app.route("/graph", createGraphRouter(graphStore))
 
-  // Vision routes
+  // ── Vision ────────────────────────────────────────────────────────────────────
+
   app.use("/vision/*", requireApiKey)
   const visionService = new VisionService(createInMemoryVisualAssetStore(), store, routerConfig, graphStore)
   app.route("/vision", createVisionRouter(visionService))
 
-  // Goals routes
+  // ── Goals ─────────────────────────────────────────────────────────────────────
+
   app.use("/goals/*", requireApiKey)
-  const goalStore = createInMemoryGoalStore()
+  const goalStore = usePersistence
+    ? createSupabaseGoalStore(createSupabaseClient(supabaseUrl!, supabaseKey!))
+    : createInMemoryGoalStore()
   app.route("/goals", createGoalsRouter(goalStore, routerConfig))
 
-  // Evals routes
-  app.use("/evals/*", requireApiKey)
-  const evalStore = createInMemoryEvalStore()
-  app.route("/evals", createEvalsRouter(evalStore, routerConfig, projectsStore))
+  // ── Evals ─────────────────────────────────────────────────────────────────────
 
-  // Settings routes — protected same as all other routes
+  app.use("/evals/*", requireApiKey)
+  const evalStore = usePersistence
+    ? createSupabaseEvalStore(createSupabaseClient(supabaseUrl!, supabaseKey!))
+    : createInMemoryEvalStore()
+  app.route("/evals", createEvalsRouter(evalStore, routerConfig, projectsStore, graphStore))
+
+  // ── Files (editor) ────────────────────────────────────────────────────────────
+
+  app.use("/projects/*/files*", requireApiKey)
+  app.route("/projects", createFilesRouter(projectsStore))
+
+  // ── Settings ──────────────────────────────────────────────────────────────────
+
   app.use("/settings/*", requireApiKey)
   app.route("/settings", createSettingsRouter())
 
-  // Releases routes
-  app.use("/releases/*", requireApiKey)
-  app.route("/releases", createReleasesRouter(routerConfig))
+  // ── Releases ──────────────────────────────────────────────────────────────────
 
-  // Workflow routes
+  app.use("/releases/*", requireApiKey)
+  app.route("/releases", createReleasesRouter(routerConfig, graphStore))
+
+  // ── Workflows ─────────────────────────────────────────────────────────────────
+
   app.use("/workflows/*", requireApiKey)
   app.get("/workflows", (c) => c.json({ workflows: listWorkflows() }))
   app.post("/workflows/:id/runs", async (c) => {
@@ -218,7 +258,11 @@ function main() {
     console.log(`  Auth: ${LOOPFORGE_API_KEY ? "API key required" : "localhost-only (set LOOPFORGE_API_KEY for remote access)"}`)
     console.log(`  OpenRouter: ${openRouterKey ? "configured" : "not set"}`)
     console.log(`  Ollama: ${routerConfig.ollamaBaseUrl}`)
+    console.log(`  Persistence: ${usePersistence ? "Supabase" : "in-memory"}`)
   })
 }
 
-main()
+main().catch((err: unknown) => {
+  console.error("[gateway] Fatal startup error:", err)
+  process.exit(1)
+})

@@ -14,6 +14,10 @@
   "dependencies": {
     "@loopforge/core": "workspace:*",
     "@loopforge/brain": "workspace:*",
+    "@loopforge/graph": "workspace:*",
+    "@loopforge/adr": "workspace:*",
+    "@loopforge/evals": "workspace:*",
+    "@loopforge/goals": "workspace:*",
     "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {

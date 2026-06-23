@@ -625,96 +625,76 @@ export default function GraphPage({
               {selectedNode.title}
             </h2>
 
-            {/* Metadata */}
-            {Object.keys(selectedNode.metadata).length > 0 && (
+            {/* Content preview */}
+            {typeof selectedNode.metadata["preview"] === "string" && (
               <div style={{ marginBottom: "16px" }}>
-                <p
-                  style={{
-                    fontSize: "10px",
-                    color: "#444",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Metadata
+                <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
+                  Content
                 </p>
-                {Object.entries(selectedNode.metadata).map(([k, v]) => (
-                  <div
-                    key={k}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: "12px",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    <span style={{ color: "#555" }}>{k}</span>
-                    <span style={{ color: "#aaa" }}>{String(v)}</span>
-                  </div>
-                ))}
+                <p style={{ fontSize: "11px", color: "#666", lineHeight: 1.6, whiteSpace: "pre-wrap", background: "#111", padding: "8px", borderRadius: "5px", maxHeight: "140px", overflowY: "auto" }}>
+                  {String(selectedNode.metadata["preview"]).slice(0, 600)}
+                </p>
               </div>
+            )}
+
+            {/* Source doc */}
+            {typeof selectedNode.metadata["sourceDoc"] === "string" && (
+              <p style={{ fontSize: "10px", color: "#333", fontFamily: "monospace", marginBottom: "12px" }}>
+                {String(selectedNode.metadata["sourceDoc"])}
+              </p>
             )}
 
             {/* Outgoing edges */}
             {selectedEdgesOut.length > 0 && (
               <div style={{ marginBottom: "16px" }}>
-                <p
-                  style={{
-                    fontSize: "10px",
-                    color: "#444",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    marginBottom: "8px",
-                  }}
-                >
+                <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>
                   Outgoing ({selectedEdgesOut.length})
                 </p>
-                {selectedEdgesOut.slice(0, 10).map((e) => (
-                  <div
-                    key={e.id}
-                    style={{
-                      fontSize: "11px",
-                      color: "#777",
-                      marginBottom: "4px",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    <span style={{ color: "#0ea5e9" }}>{e.relationship}</span>{" "}
-                    → {e.targetNodeId}
-                  </div>
-                ))}
+                {selectedEdgesOut.slice(0, 12).map((e) => {
+                  const tgtNode = allNodes.find((n) => n.id === e.targetNodeId);
+                  return (
+                    <div
+                      key={e.id}
+                      onClick={() => {
+                        if (tgtNode) { setSelectedNode(tgtNode); setHighlightIds(new Set([tgtNode.id])); }
+                      }}
+                      style={{ fontSize: "11px", color: "#777", marginBottom: "6px", lineHeight: 1.4, cursor: tgtNode ? "pointer" : "default", padding: "4px 6px", borderRadius: "4px", background: "#111" }}
+                    >
+                      <span style={{ color: "#0ea5e9", fontSize: "10px" }}>{e.relationship}</span>
+                      <br />
+                      <span style={{ color: tgtNode ? "#aaa" : "#444" }}>
+                        {tgtNode ? tgtNode.title : e.targetNodeId}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {/* Incoming edges */}
             {selectedEdgesIn.length > 0 && (
               <div style={{ marginBottom: "16px" }}>
-                <p
-                  style={{
-                    fontSize: "10px",
-                    color: "#444",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    marginBottom: "8px",
-                  }}
-                >
+                <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>
                   Incoming ({selectedEdgesIn.length})
                 </p>
-                {selectedEdgesIn.slice(0, 10).map((e) => (
-                  <div
-                    key={e.id}
-                    style={{
-                      fontSize: "11px",
-                      color: "#777",
-                      marginBottom: "4px",
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {e.sourceNodeId}{" "}
-                    <span style={{ color: "#0ea5e9" }}>{e.relationship}</span>
-                  </div>
-                ))}
+                {selectedEdgesIn.slice(0, 12).map((e) => {
+                  const srcNode = allNodes.find((n) => n.id === e.sourceNodeId);
+                  return (
+                    <div
+                      key={e.id}
+                      onClick={() => {
+                        if (srcNode) { setSelectedNode(srcNode); setHighlightIds(new Set([srcNode.id])); }
+                      }}
+                      style={{ fontSize: "11px", color: "#777", marginBottom: "6px", lineHeight: 1.4, cursor: srcNode ? "pointer" : "default", padding: "4px 6px", borderRadius: "4px", background: "#111" }}
+                    >
+                      <span style={{ color: srcNode ? "#aaa" : "#444" }}>
+                        {srcNode ? srcNode.title : e.sourceNodeId}
+                      </span>
+                      <br />
+                      <span style={{ color: "#0ea5e9", fontSize: "10px" }}>{e.relationship}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
