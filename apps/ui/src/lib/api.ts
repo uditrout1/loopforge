@@ -9,10 +9,29 @@ function headers(): HeadersInit {
   };
 }
 
+export interface TechStack {
+  languages: string[];
+  frameworks: string[];
+  databases: string[];
+  infrastructure: string[];
+}
+
+export interface ProjectKnowledge {
+  summary: string;
+  conventions: Record<string, string>;
+  entryPoints: string[];
+  openTodos: string[];
+  recentDecisions: string[];
+  designConstraints: string[];
+}
+
 export interface Project {
   id: string;
   name: string;
-  repoPath: string;
+  repoPath?: string;
+  stack?: TechStack;
+  knowledge?: ProjectKnowledge;
+  indexedAt?: string;
   createdAt?: string;
 }
 
@@ -79,6 +98,13 @@ export async function getProject(id: string): Promise<Project> {
   });
   if (!res.ok) throw new Error(`Failed to fetch project: ${res.statusText}`);
   return res.json() as Promise<Project>;
+}
+
+export async function reindexProject(id: string): Promise<void> {
+  await fetch(`${GATEWAY_URL}/projects/${id}/reindex`, {
+    method: "POST",
+    headers: headers(),
+  });
 }
 
 export async function createProject(
@@ -479,6 +505,45 @@ export async function getEvalsSummary(projectId: string): Promise<EvalsSummary |
   const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/summary`, { headers: headers() });
   if (!r.ok) return null;
   return r.json() as Promise<EvalsSummary>;
+}
+
+export type ScanType = "db_long_queries" | "n_plus_one" | "missing_indexes" | "unhandled_errors" | "custom";
+
+export interface ScanFinding {
+  id: string;
+  file: string;
+  startLine: number;
+  endLine: number;
+  snippet: string;
+  issue: string;
+  severity: "high" | "medium" | "low";
+  suggestion: string;
+  score: number;
+}
+
+export interface ScanResult {
+  scanId: string;
+  scanType: ScanType;
+  projectId: string;
+  findings: ScanFinding[];
+  filesScanned: number;
+  createdAt: string;
+}
+
+export async function runRepoScan(
+  projectId: string,
+  repoPath: string,
+  scanType: ScanType,
+  customDescription?: string,
+): Promise<ScanResult> {
+  const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/scan`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ repoPath, scanType, customDescription }),
+  });
+  if (!r.ok) throw new Error(`Scan failed: ${r.statusText}`);
+  const data = await r.json() as { result: ScanResult };
+  return data.result;
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────

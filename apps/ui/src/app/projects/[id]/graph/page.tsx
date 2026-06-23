@@ -285,6 +285,7 @@ export default function GraphPage({
   // Load data
   useEffect(() => {
     async function load() {
+      if (!projectId) return;
       try {
         setLoading(true);
         const [sum, nodes] = await Promise.all([

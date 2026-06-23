@@ -6,6 +6,8 @@ import type { RouterConfig } from "@loopforge/router"
 import type { EvalStore } from "./store.js"
 import { runEval } from "./runner.js"
 import { submitFeedback } from "./feedback.js"
+import { scanRepo } from "./scanner.js"
+import type { ScanType } from "./scanner.js"
 
 function requireParam(c: Context, name: string): string | null {
   const val = c.req.param(name)
@@ -130,6 +132,28 @@ export function createEvalsRouter(store: EvalStore, routerConfig: RouterConfig):
       store,
     )
     return c.json({ feedback }, 201)
+  })
+
+  // POST /:projectId/scan — repo scan mode (no manual paste required)
+  app.post("/:projectId/scan", async (c: Context) => {
+    const projectId = requireParam(c, "projectId")
+    if (!projectId) return c.json({ error: "projectId required" }, 400)
+    const body = await c.req.json() as {
+      repoPath: string
+      scanType: ScanType
+      customDescription?: string
+    }
+    if (!body.repoPath || !body.scanType) {
+      return c.json({ error: "repoPath and scanType are required" }, 400)
+    }
+    const result = await scanRepo(
+      projectId,
+      body.repoPath,
+      body.scanType,
+      routerConfig,
+      body.customDescription,
+    )
+    return c.json({ result })
   })
 
   // GET /:projectId/summary

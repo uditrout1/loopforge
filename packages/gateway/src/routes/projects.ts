@@ -64,7 +64,8 @@ export function createProjectsRouter(store?: BrainStore, graphStore?: GraphStore
     const project: Project = {
       id: projectId,
       orgId: "default",
-      name: String(body.name).slice(0, 256), // bound the name length
+      name: String(body.name).slice(0, 256),
+      repoPath,
       repoProvider: "local",
       stack: { languages: [], frameworks: [], databases: [], infrastructure: [] },
       knowledge: {
@@ -152,6 +153,23 @@ export function createProjectsRouter(store?: BrainStore, graphStore?: GraphStore
     }
     await store.savePack(pack)
     return c.json(pack, 201)
+  })
+
+  // POST /:id/reindex — re-run doc scanner + graph ingestion for existing project
+  app.post("/:id/reindex", async (c) => {
+    const projectId = c.req.param("id")
+    const project = projects.get(projectId)
+    if (!project) return c.json({ error: "Project not found" }, 404)
+    if (!graphStore) return c.json({ error: "Graph store not configured" }, 500)
+    const repoPath = String(project.repoPath ?? "")
+    scanDocs(repoPath)
+      .then(async (docs) => {
+        console.log(`[graph] Reindex: found ${docs.length} doc(s) for ${projectId}`)
+        await ingestScannedDocs(projectId, docs, graphStore)
+        console.log(`[graph] Reindex complete for ${projectId}`)
+      })
+      .catch((err: unknown) => console.error(`[graph] Reindex failed for ${projectId}:`, err))
+    return c.json({ ok: true, message: "Reindex started" })
   })
 
   app.delete("/:id/packs/:packId", async (c) => {

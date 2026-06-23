@@ -7,6 +7,7 @@ export interface Project {
   orgId: string
   name: string
   repoUrl?: string
+  repoPath?: string
   repoProvider: "github" | "gitlab" | "local"
   stack: TechStack
   knowledge: ProjectKnowledge
