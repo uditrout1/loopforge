@@ -183,7 +183,8 @@ function main() {
   const evalStore = createInMemoryEvalStore()
   app.route("/evals", createEvalsRouter(evalStore, routerConfig))
 
-  // Settings routes (no auth — settings are local config)
+  // Settings routes — protected same as all other routes
+  app.use("/settings/*", requireApiKey)
   app.route("/settings", createSettingsRouter())
 
   // Releases routes
