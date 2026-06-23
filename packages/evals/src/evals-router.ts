@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import type { Context } from "hono"
 import { randomUUID } from "node:crypto"
-import type { EvalType, FeedbackVerdict } from "@loopforge/core"
+import type { EvalType, FeedbackVerdict, Project } from "@loopforge/core"
 import type { RouterConfig } from "@loopforge/router"
 import type { EvalStore } from "./store.js"
 import { runEval } from "./runner.js"
@@ -14,7 +14,11 @@ function requireParam(c: Context, name: string): string | null {
   return val ?? null
 }
 
-export function createEvalsRouter(store: EvalStore, routerConfig: RouterConfig): Hono {
+export function createEvalsRouter(
+  store: EvalStore,
+  routerConfig: RouterConfig,
+  projectsMap?: Map<string, Project>,
+): Hono {
   const app = new Hono()
 
   // GET /:projectId/criteria
@@ -135,20 +139,27 @@ export function createEvalsRouter(store: EvalStore, routerConfig: RouterConfig):
   })
 
   // POST /:projectId/scan — repo scan mode (no manual paste required)
+  // Security: repoPath is derived from the server-side project record, not the request body,
+  // so callers cannot path-traverse to arbitrary directories.
   app.post("/:projectId/scan", async (c: Context) => {
     const projectId = requireParam(c, "projectId")
     if (!projectId) return c.json({ error: "projectId required" }, 400)
+
+    const project = projectsMap?.get(projectId)
+    if (!project) return c.json({ error: "Project not found" }, 404)
+    const repoPath = project.repoPath
+    if (!repoPath) return c.json({ error: "Project has no repoPath" }, 400)
+
     const body = await c.req.json() as {
-      repoPath: string
       scanType: ScanType
       customDescription?: string
     }
-    if (!body.repoPath || !body.scanType) {
-      return c.json({ error: "repoPath and scanType are required" }, 400)
+    if (!body.scanType) {
+      return c.json({ error: "scanType is required" }, 400)
     }
     const result = await scanRepo(
       projectId,
-      body.repoPath,
+      repoPath,
       body.scanType,
       routerConfig,
       body.customDescription,

@@ -152,11 +152,13 @@ export async function scanRepo(
   const exts = SCAN_EXTENSIONS[scanType]
   const patterns = SCAN_PATTERNS[scanType]
 
-  let systemPrompt = SCAN_PROMPTS[scanType]
-  if (scanType === "custom" && customDescription) {
-    systemPrompt =
-      `${customDescription}\n\nRespond ONLY as JSON: {"issue":"<problem or 'None'>","severity":"high|medium|low","suggestion":"<concrete fix>","score":<0.0-1.0 where 0=critical issue, 1=no issue found>}`
-  }
+  const systemPrompt = SCAN_PROMPTS[scanType]
+  // Security: customDescription is untrusted user content — kept separate via delimiter,
+  // never concatenated into the system instruction block.
+  const customIntent =
+    scanType === "custom" && customDescription
+      ? `\n<user_scan_intent>${customDescription.slice(0, 500).replace(/[<>]/g, "")}</user_scan_intent>`
+      : ""
 
   const allFiles = await walkFiles(repoPath, exts)
   // cap at 60 files to stay within reasonable cost
@@ -203,7 +205,7 @@ export async function scanRepo(
           const response = await route(
             {
               messages: [
-                { role: "user", content: `${systemPrompt}\n\n${userMsg}` },
+                { role: "user", content: `${systemPrompt}${customIntent}\n\n${userMsg}` },
               ],
               projectId,
               sessionId: randomUUID(),

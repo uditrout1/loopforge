@@ -181,7 +181,7 @@ function main() {
   // Evals routes
   app.use("/evals/*", requireApiKey)
   const evalStore = createInMemoryEvalStore()
-  app.route("/evals", createEvalsRouter(evalStore, routerConfig))
+  app.route("/evals", createEvalsRouter(evalStore, routerConfig, projectsStore))
 
   // Settings routes — protected same as all other routes
   app.use("/settings/*", requireApiKey)

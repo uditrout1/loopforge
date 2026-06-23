@@ -532,14 +532,13 @@ export interface ScanResult {
 
 export async function runRepoScan(
   projectId: string,
-  repoPath: string,
   scanType: ScanType,
   customDescription?: string,
 ): Promise<ScanResult> {
   const r = await fetch(`${GATEWAY_URL}/evals/${projectId}/scan`, {
     method: "POST",
     headers: headers(),
-    body: JSON.stringify({ repoPath, scanType, customDescription }),
+    body: JSON.stringify({ scanType, customDescription }),
   });
   if (!r.ok) throw new Error(`Scan failed: ${r.statusText}`);
   const data = await r.json() as { result: ScanResult };

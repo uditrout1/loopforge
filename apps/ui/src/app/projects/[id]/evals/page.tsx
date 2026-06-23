@@ -133,7 +133,7 @@ export default function EvalsPage({ params }: PageProps) {
     setScanResult(null);
     setScanError(null);
     try {
-      const result = await runRepoScan(projectId, repoPath, scanType, scanType === "custom" ? customDesc : undefined);
+      const result = await runRepoScan(projectId, scanType, scanType === "custom" ? customDesc : undefined);
       setScanResult(result);
     } catch (e) {
       setScanError(e instanceof Error ? e.message : "Scan failed");
