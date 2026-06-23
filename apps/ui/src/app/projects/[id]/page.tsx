@@ -155,6 +155,21 @@ export default async function ProjectPage({ params }: PageProps) {
                 Goals
               </Link>
               <Link
+                href={`/projects/${id}/releases`}
+                style={{
+                  background: "#1a1a1a",
+                  color: "#e8e8e8",
+                  padding: "9px 18px",
+                  borderRadius: "7px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  border: "1px solid #2a2a2a",
+                }}
+              >
+                Releases
+              </Link>
+              <Link
                 href={`/projects/${id}/session`}
                 style={{
                   background: "#f0f0f0",

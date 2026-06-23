@@ -480,3 +480,94 @@ export async function getEvalsSummary(projectId: string): Promise<EvalsSummary |
   if (!r.ok) return null;
   return r.json() as Promise<EvalsSummary>;
 }
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+
+export interface LoopForgeSettings {
+  models: { small: string; medium: string; frontier: string; ollamaModel: string };
+  routing: { preferOnPrem: boolean; confidentialOnPremOnly: boolean; costLimitPerSessionUsd: number | null };
+  workflows: Record<string, { enabled: boolean; trigger: string }>;
+  ui: { showCostPerMessage: boolean; showModelPerMessage: boolean };
+}
+
+export interface AvailableModel {
+  id: string;
+  name: string;
+  tier: string;
+  provider: string;
+}
+
+export async function getSettings(): Promise<LoopForgeSettings> {
+  const r = await fetch(`${GATEWAY_URL}/settings`);
+  return r.json() as Promise<LoopForgeSettings>;
+}
+
+export async function updateSettings(body: Partial<LoopForgeSettings>): Promise<LoopForgeSettings> {
+  const r = await fetch(`${GATEWAY_URL}/settings`, {
+    method: "PUT",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  return r.json() as Promise<LoopForgeSettings>;
+}
+
+export async function getAvailableModels(): Promise<AvailableModel[]> {
+  const r = await fetch(`${GATEWAY_URL}/settings/models/available`);
+  if (!r.ok) return [];
+  return r.json() as Promise<AvailableModel[]>;
+}
+
+// ─── Releases ─────────────────────────────────────────────────────────────────
+
+export interface ReleaseData {
+  id: string;
+  projectId: string;
+  version: string;
+  name: string;
+  status: "draft" | "published";
+  changelog: string;
+  mergedPrIds: string[];
+  resolvedTicketIds: string[];
+  generatedAt: string;
+  publishedAt?: string;
+  createdAt: string;
+}
+
+export async function getReleases(projectId: string): Promise<ReleaseData[]> {
+  const r = await fetch(`${GATEWAY_URL}/releases/${projectId}`, { headers: headers() });
+  if (!r.ok) return [];
+  return r.json() as Promise<ReleaseData[]>;
+}
+
+export async function generateRelease(
+  projectId: string,
+  body: { version: string; name: string; prNumbers: string[]; ticketIds: string[]; context?: string }
+): Promise<ReleaseData> {
+  const r = await fetch(`${GATEWAY_URL}/releases/${projectId}/generate`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  return r.json() as Promise<ReleaseData>;
+}
+
+export async function publishRelease(projectId: string, releaseId: string): Promise<ReleaseData> {
+  const r = await fetch(`${GATEWAY_URL}/releases/${projectId}/${releaseId}/publish`, {
+    method: "POST",
+    headers: headers(),
+  });
+  return r.json() as Promise<ReleaseData>;
+}
+
+export async function updateRelease(
+  projectId: string,
+  releaseId: string,
+  body: { changelog?: string; name?: string }
+): Promise<ReleaseData> {
+  const r = await fetch(`${GATEWAY_URL}/releases/${projectId}/${releaseId}`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify(body),
+  });
+  return r.json() as Promise<ReleaseData>;
+}

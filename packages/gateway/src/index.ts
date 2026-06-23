@@ -14,6 +14,8 @@ import { createGraphRouter, createInMemoryGraphStore } from "@loopforge/graph"
 import type { GraphStore } from "@loopforge/graph"
 import { createGoalsRouter, createInMemoryGoalStore } from "@loopforge/goals"
 import { createEvalsRouter, createInMemoryEvalStore } from "@loopforge/evals"
+import { createSettingsRouter, getSettings } from "./routes/settings.js"
+import { createReleasesRouter } from "./routes/releases.js"
 import type { Context, Next } from "hono"
 import { BUILT_IN_PACKS } from "@loopforge/brain"
 import type { BrainStore } from "@loopforge/brain"
@@ -115,10 +117,16 @@ function main() {
   app.use("/sessions/*", requireApiKey)
 
   const openRouterKey = process.env["OPENROUTER_API_KEY"]
+  const settings = getSettings()
   const routerConfig = {
     ...(openRouterKey !== undefined ? { openRouterApiKey: openRouterKey } : {}),
-    ollamaBaseUrl: process.env["OLLAMA_BASE_URL"] ?? "http://localhost:11434",
+    ollamaBaseUrl: process.env["OLLAMA_BASE_URL"] ?? settings.models.ollamaModel,
     forceOnPremForClassifications: ["confidential", "restricted"],
+    modelOverrides: {
+      small: settings.models.small,
+      medium: settings.models.medium,
+      frontier: settings.models.frontier,
+    },
   }
 
   // Graph store (shared singleton — declared early so projects router can use it)
@@ -174,6 +182,13 @@ function main() {
   app.use("/evals/*", requireApiKey)
   const evalStore = createInMemoryEvalStore()
   app.route("/evals", createEvalsRouter(evalStore, routerConfig))
+
+  // Settings routes (no auth — settings are local config)
+  app.route("/settings", createSettingsRouter())
+
+  // Releases routes
+  app.use("/releases/*", requireApiKey)
+  app.route("/releases", createReleasesRouter(routerConfig))
 
   // Workflow routes
   app.use("/workflows/*", requireApiKey)

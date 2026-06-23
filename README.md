@@ -241,6 +241,25 @@ All routes require `X-API-Key: <LOOPFORGE_API_KEY>` when `HOST != 127.0.0.1`.
 | `POST` | `/evals/:projectId/runs/:runId/feedback` | Submit human feedback (approved/rejected/partial) |
 | `GET` | `/evals/:projectId/summary` | Pass rate, regression count, total runs |
 
+### Settings & Model Control
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/settings` | Read current settings (models, workflows, routing, UI prefs) |
+| `PUT` | `/settings` | Update settings — deep merge, confidentialOnPremOnly always locked |
+| `GET` | `/settings/models/available` | Curated list of OpenRouter + Ollama models by tier |
+| `DELETE` | `/settings/reset` | Reset all settings to defaults |
+
+### Releases
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/releases/:projectId` | List releases, newest first |
+| `POST` | `/releases/:projectId/generate` | Generate changelog with Claude from PR + ticket list |
+| `PATCH` | `/releases/:projectId/:releaseId` | Edit release name or changelog |
+| `POST` | `/releases/:projectId/:releaseId/publish` | Publish release (draft → published) |
+| `DELETE` | `/releases/:projectId/:releaseId` | Delete release |
+
 ### Backlog & Workflows
 
 | Method | Route | Description |
@@ -345,8 +364,13 @@ For confidential/restricted workloads, omit `OPENROUTER_API_KEY` — all request
 - [x] Engineering Goals — Claude decomposes goals into tickets, progress tracking, blocker surfacing
 - [x] Vibe Coder wizard — start from scratch with BRD/FRD/PRD templates + AI fill; or connect an existing repo
 
+- [x] Doc scanner — auto-ingests `CLAUDE.md`, `PRD.md`, `BRD.md`, `README.md`, `adr/*.md` into knowledge graph on repo connect
+- [x] Settings page — model selection per tier (small/medium/frontier), workflow toggles, on-prem routing, cost limits
+- [x] Model pin API — `GET/PUT /settings`, `GET /settings/models/available`, RouterConfig `modelOverrides`
+- [x] Releases — AI changelog generation, draft → publish flow, PR + ticket tagging
+
 ### In Progress
-- [ ] **Deep repo analysis** — Claude-generated architecture summary, Swift/iOS stack detection, auto-ticket creation from TODOs, chunk storage fix
+- [ ] **Deep repo analysis** — code-scan for repos without docs, generate draft BRD/FRD/PRD with human approval gate before graph ingestion
 - [ ] **Project page overhaul** — rich dashboard showing stack, knowledge summary, TODOs, entry points
 - [ ] **Docs backend** — `POST /projects/:id/initiate` saves BRD/FRD/PRD as specs; `POST /docs/ai-assist` fills templates from codebase context
 

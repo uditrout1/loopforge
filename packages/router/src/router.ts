@@ -6,8 +6,13 @@ import { callOllama, isOllamaAvailable } from "./providers/ollama.js"
 export interface RouterConfig {
   openRouterApiKey?: string
   ollamaBaseUrl?: string
-  // Restricted/confidential projects are forced to on-prem
   forceOnPremForClassifications?: string[]
+  // User-pinnable model overrides per tier (set via /settings)
+  modelOverrides?: {
+    small?: string
+    medium?: string
+    frontier?: string
+  }
 }
 
 export async function route(
@@ -48,10 +53,12 @@ export async function route(
     throw new Error("OPENROUTER_API_KEY is required for cloud model routing")
   }
 
+  const modelOverride = config.modelOverrides?.[effectiveCapability]
   const response = await callOpenRouter(
     request.messages,
     effectiveCapability,
     config.openRouterApiKey,
+    modelOverride,
   )
 
   return {

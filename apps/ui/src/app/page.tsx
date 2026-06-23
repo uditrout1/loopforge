@@ -48,6 +48,19 @@ export default async function HomePage() {
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <Link
+            href="/settings"
+            style={{
+              background: "transparent",
+              color: "#555",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              textDecoration: "none",
+            }}
+          >
+            ⚙ Settings
+          </Link>
+          <Link
             href="/projects/new"
             style={{
               background: "#1a1a1a",
